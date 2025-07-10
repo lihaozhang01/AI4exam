@@ -28,7 +28,9 @@ const buildAnswersPayload = (userAnswers, questions) => {
       case 'multiple_choice':
         return { ...basePayload, answer_indices: answer || [] };
       case 'fill_in_the_blank':
-        return { ...basePayload, answer_texts: answer || [] };
+        // 如果答案是单个字符串（由$$$拼接），则拆分为数组
+        const answers = typeof answer === 'string' ? answer.split('$$$') : (answer || []);
+        return { ...basePayload, answer_texts: answers };
       case 'essay':
         return { ...basePayload, answer_text: answer || "" };
       default:
@@ -110,12 +112,17 @@ const TestPaperPage = () => {
     message.info(`正在为题目 ${questionId} 请求AI点评...`);
     try {
       const question = testData.questions.find(q => q.id === questionId);
-      const userAnswer = userAnswers[questionId];
+      let userAnswer = userAnswers[questionId];
+
+      // 确保填空题答案是数组格式
+      if (question.type === 'fill_in_the_blank' && typeof userAnswer === 'string') {
+        userAnswer = userAnswer.split('$$$');
+      }
 
       const response = await axios.post('/api/generate-single-question-feedback', {
         test_id: testData.test_id,
         question_id: question.id,
-        user_answer: userAnswer,
+        user_answer: userAnswer, // 发送处理过的答案
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
       message.success(`题目 ${questionId} 的AI点评已生成！`);
