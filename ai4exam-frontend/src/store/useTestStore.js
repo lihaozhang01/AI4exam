@@ -5,7 +5,10 @@ const useTestStore = create((set) => ({
   testData: null,
   isLoading: false,
   userAnswers: {},
-  gradingResults: null, // 新增：存放批改结果 { question_id: result }
+  gradingResults: null, // 存放批改结果 { question_id: result }
+  submissionStatus: 'not_submitted', // not_submitted, submitted_and_showing_answers
+  overallFeedback: null, // 存储整卷的AI反馈
+  singleQuestionFeedbacks: {}, // 存储单个问题的AI反馈 { question_id: feedback }
 
   setTestData: (data) => set({
     testData: data,
@@ -25,6 +28,17 @@ const useTestStore = create((set) => ({
 
   // 新增：保存批改结果
   setGradingResults: (results) => set({ gradingResults: results }),
+
+  setSubmissionStatus: (status) => set({ submissionStatus: status }),
+
+  setOverallFeedback: (feedback) => set({ overallFeedback: feedback }),
+
+  setSingleQuestionFeedback: (questionId, feedback) => set((state) => ({
+    singleQuestionFeedbacks: {
+      ...state.singleQuestionFeedbacks,
+      [questionId]: feedback,
+    },
+  })),
 }));
 
 export default useTestStore;
