@@ -13,7 +13,10 @@ const useTestStore = create((set) => ({
   setTestData: (data) => set({
     testData: data,
     userAnswers: {},
-    gradingResults: null // 生成新试卷时，清空所有旧数据
+    gradingResults: null, // 生成新试卷时，清空所有旧数据
+    submissionStatus: 'not_submitted', // 生成新试卷时，重置提交状态
+    overallFeedback: null,
+    singleQuestionFeedbacks: {},
   }),
   setIsLoading: (loading) => set({ isLoading: loading }),
 

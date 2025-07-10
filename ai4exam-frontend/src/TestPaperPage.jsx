@@ -11,6 +11,32 @@ import MultipleChoiceQuestion from './components/MultipleChoiceQuestion';
 import FillInTheBlankQuestion from './components/FillInTheBlankQuestion';
 import EssayQuestion from './components/EssayQuestion';
 
+// Helper function to build the payload for API calls
+const buildAnswersPayload = (userAnswers, questions) => {
+  return Object.keys(userAnswers).map(questionId => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) {
+      console.warn(`Question with id ${questionId} not found. Skipping.`);
+      return null;
+    }
+    const answer = userAnswers[questionId];
+    const basePayload = { question_id: questionId, question_type: question.type };
+
+    switch (question.type) {
+      case 'single_choice':
+        return { ...basePayload, answer_index: answer };
+      case 'multiple_choice':
+        return { ...basePayload, answer_indices: answer || [] };
+      case 'fill_in_the_blank':
+        return { ...basePayload, answer_texts: answer || [] };
+      case 'essay':
+        return { ...basePayload, answer_text: answer || "" };
+      default:
+        return null;
+    }
+  }).filter(Boolean);
+};
+
 const TestPaperPage = () => {
   const navigate = useNavigate();
   const {
@@ -31,34 +57,25 @@ const TestPaperPage = () => {
   const handleSubmitAndShowAnswers = async () => {
     setIsLoading(true);
     try {
-      const answersToSend = Object.keys(userAnswers).map(questionId => {
-        const question = testData.questions.find(q => q.id === questionId);
-        const answer = userAnswers[questionId];
+      if (!testData || !testData.test_id) {
+        message.error("试卷信息不完整，无法提交。请返回首页重试。");
+        return;
+      }
 
-        switch (question.type) {
-          case 'single_choice':
-            return { question_id: questionId, question_type: 'single_choice', answer_index: answer };
-          case 'multiple_choice':
-            return { question_id: questionId, question_type: 'multiple_choice', answer_indices: answer };
-          case 'fill_in_the_blank':
-            // Assuming the answer is an array of strings
-            return { question_id: questionId, question_type: 'fill_in_the_blank', answer_texts: answer };
-          default:
-            return null; // Or handle other types appropriately
-        }
-      }).filter(Boolean); // Filter out any null entries
+      const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
+      const objectiveAnswers = allAnswers.filter(a => a.question_type !== 'essay');
 
       const response = await axios.post('/api/grade-objective-questions', {
         test_id: testData.test_id,
-        answers: answersToSend,
+        answers: objectiveAnswers,
       });
-      
+
       setGradingResults(response.data.results);
       setSubmissionStatus('submitted_and_showing_answers');
-      message.success('答案已揭晓！现在可以请求AI进行详细点评。');
+      message.success('客观题已自动批改！现在可以请求AI进行详细点评。');
     } catch (error) {
       console.error("Error submitting answers:", error);
-      message.error("提交答案失败，请稍后再试。");
+      message.error("提交答案失败，请检查网络连接或稍后再试。");
     } finally {
       setIsLoading(false);
     }
@@ -68,21 +85,12 @@ const TestPaperPage = () => {
     setIsLoading(true);
     message.info('正在请求AI对整卷进行分析，请稍候...');
     try {
-      const answersToSend = Object.keys(userAnswers).map(questionId => {
-        const question = testData.questions.find(q => q.id === questionId);
-        const answer = userAnswers[questionId];
+      if (!testData || !testData.test_id) {
+        message.error("试卷信息不完整，无法请求分析。");
+        return;
+      }
 
-        switch (question.type) {
-          case 'single_choice':
-            return { question_id: questionId, question_type: 'single_choice', answer_index: answer };
-          case 'multiple_choice':
-            return { question_id: questionId, question_type: 'multiple_choice', answer_indices: answer };
-          case 'fill_in_the_blank':
-            return { question_id: questionId, question_type: 'fill_in_the_blank', answer_texts: answer };
-          default:
-            return null;
-        }
-      }).filter(Boolean);
+      const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
 
       const response = await axios.post('/api/generate-overall-feedback', {
         test_id: testData.test_id,
@@ -114,7 +122,7 @@ const TestPaperPage = () => {
     } catch (error) {
       console.error('Error requesting single question feedback:', error);
       message.error('请求该题反馈失败，请稍后再试。');
-    } 
+    }
   };
 
 
@@ -182,7 +190,7 @@ const TestPaperPage = () => {
           </Button>
         )}
         {submissionStatus !== 'not_submitted' && gradingResults && (
-           <p style={{marginTop: '16px', color: '#888'}}>分析完成后，你还可以针对单个题目请求AI进行更详细的点评。</p>
+          <p style={{ marginTop: '16px', color: '#888' }}>分析完成后，你还可以针对单个题目请求AI进行更详细的点评。</p>
         )}
       </div>
     </div>
