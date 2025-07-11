@@ -63,10 +63,18 @@ const TestFormPage = () => {
       };
 
       const formData = new FormData();
-      formData.append('source_text', values.source_text);
-      // 注意：API需要一个名为 config_json 的字符串
+      // 根据用户输入，添加 source_text 或 source_file
+      if (values.source_file && values.source_file.length > 0) {
+        formData.append('source_file', values.source_file[0].originFileObj);
+      } else if (values.source_text) {
+        formData.append('source_text', values.source_text);
+      } else {
+        message.error('请提供知识源，可以是文本或文件。');
+        setIsLoading(false);
+        return;
+      }
+
       formData.append('config_json', JSON.stringify(config));
-      // 如果有文件上传，也在这里处理 values.source_file
 
       // 2. 调用API
       const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, {
@@ -95,12 +103,12 @@ const TestFormPage = () => {
       <Divider orientation="left">1. 提供知识源</Divider>
       <Tabs defaultActiveKey="1">
         <Tabs.TabPane tab="粘贴文本" key="1">
-          <Form.Item name="source_text" rules={[{ required: true, message: '请输入知识源文本！' }]}>
+          <Form.Item name="source_text">
             <TextArea rows={10} placeholder="请在此处粘贴你需要出题的文本内容..." />
           </Form.Item>
         </Tabs.TabPane>
         <Tabs.TabPane tab="上传文件" key="2">
-          <Form.Item name="source_file">
+          <Form.Item name="source_file" valuePropName="fileList" getValueFromEvent={(e) => e && e.fileList}>
             <Dragger beforeUpload={() => false} maxCount={1}>
               <p className="ant-upload-drag-icon"><UploadOutlined /></p>
               <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>

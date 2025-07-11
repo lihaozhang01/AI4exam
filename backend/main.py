@@ -92,13 +92,22 @@ async def generate_test(
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
         response = await model.generate_content_async(prompt)
+
+        # 异步迭代，拼接完整的AI响应文本
+        full_response_text = ""
+        async for chunk in response:
+            try:
+                full_response_text += chunk.text
+            except Exception as e:
+                # 处理可能出现的无text属性的chunk
+                pass
         
         # 使用正则表达式从响应中提取JSON代码块
-        match = re.search(r"```json\n(.*?)\n```", response.text, re.DOTALL)
+        match = re.search(r"```json\n(.*?)\n```", full_response_text, re.DOTALL)
         if not match:
             # 如果没有找到代码块，尝试直接解析整个文本，以防AI直接返回纯JSON
             try:
-                ai_response = json.loads(response.text)
+                ai_response = json.loads(full_response_text)
             except json.JSONDecodeError:
                 raise HTTPException(status_code=500, detail="Failed to parse AI response as JSON.")
         else:
