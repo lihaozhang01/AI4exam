@@ -6,7 +6,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
   const { userAnswers, updateUserAnswer } = useTestStore();
 
   return (
-    <Card title={`${index + 1}. 单选题：${question.stem}`} style={{ marginBottom: '20px' }}>
+    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 单选题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
       <Radio.Group
         onChange={(e) => updateUserAnswer(question.id, e.target.value)}
         value={userAnswers[question.id]}

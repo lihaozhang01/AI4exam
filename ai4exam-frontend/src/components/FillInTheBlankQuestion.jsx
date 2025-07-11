@@ -34,7 +34,7 @@ const FillInTheBlankQuestion = ({ question, index, gradingResult }) => {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
         {parts.map((part, i) => (
           <React.Fragment key={i}>
-            {part}
+            <span style={{ whiteSpace: 'pre-wrap' }}>{part}</span>
             {i < blanks && (
               <Input
                 style={{ width: '150px', margin: '0 8px' }}

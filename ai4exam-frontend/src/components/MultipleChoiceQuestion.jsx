@@ -8,7 +8,7 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
   const formatAnswer = (indices) => indices.map(i => String.fromCharCode(65 + i)).join(', ');
 
   return (
-    <Card title={`${index + 1}. 多选题：${question.stem}`} style={{ marginBottom: '20px' }}>
+    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 多选题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
       <Checkbox.Group
         onChange={(values) => updateUserAnswer(question.id, values)}
         value={userAnswers[question.id] || []}

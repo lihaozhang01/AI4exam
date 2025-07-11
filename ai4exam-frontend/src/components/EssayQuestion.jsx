@@ -11,7 +11,7 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
   const isSubmitted = !!gradingResult;
 
   return (
-    <Card title={`${index + 1}. 论述题：${question.stem}`} style={{ marginBottom: '20px' }}>
+    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 论述题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
       <p>你的回答:</p>
       <TextArea
         rows={6}
