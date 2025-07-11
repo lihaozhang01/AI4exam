@@ -77,8 +77,18 @@ const TestFormPage = () => {
       formData.append('config_json', JSON.stringify(config));
 
       // 2. 调用API
+      const apiKey = localStorage.getItem('api_key');
+      if (!apiKey) {
+        message.error('请先在右上角设置中填写您的API Key！');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-API-KEY': apiKey,
+        }
       });
 
       // 3. 将返回的数据存入全局状态

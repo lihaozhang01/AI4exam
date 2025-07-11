@@ -66,9 +66,20 @@ const TestPaperPage = () => {
 
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
 
+      const apiKey = localStorage.getItem('api_key');
+      if (!apiKey) {
+        message.error('请先在右上角设置中填写您的API Key！');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.post('/api/grade-questions', {
         test_id: testData.test_id,
         answers: allAnswers,
+      }, {
+        headers: {
+          'X-API-KEY': apiKey,
+        }
       });
 
       setGradingResults(response.data.results);
@@ -93,9 +104,20 @@ const TestPaperPage = () => {
 
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
 
+      const apiKey = localStorage.getItem('api_key');
+      if (!apiKey) {
+        message.error('请先在右上角设置中填写您的API Key！');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.post('/api/generate-overall-feedback', {
         test_id: testData.test_id,
         answers: answersToSend,
+      }, {
+        headers: {
+          'X-API-KEY': apiKey,
+        }
       });
       setOverallFeedback(response.data.feedback);
       message.success('AI分析完成！');
@@ -118,10 +140,20 @@ const TestPaperPage = () => {
         userAnswer = userAnswer.split('$$$');
       }
 
+      const apiKey = localStorage.getItem('api_key');
+      if (!apiKey) {
+        message.error('请先在右上角设置中填写您的API Key！');
+        return; // No loading state change needed here as it's per-question
+      }
+
       const response = await axios.post('/api/generate-single-question-feedback', {
         test_id: testData.test_id,
         question_id: question.id,
         user_answer: userAnswer, // 发送处理过的答案
+      }, {
+        headers: {
+          'X-API-KEY': apiKey,
+        }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
       message.success(`题目 ${questionId} 的AI点评已生成！`);

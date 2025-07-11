@@ -1,4 +1,40 @@
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, DateTime, JSON
+from sqlalchemy.orm import relationship, sessionmaker
 from pydantic import BaseModel
+from sqlalchemy.ext.declarative import declarative_base
+import datetime
+
+Base = declarative_base()
+
+class TestPaper(Base):
+    __tablename__ = 'test_papers'
+    id = Column(Integer, primary_key=True)
+    source_type = Column(String(50)) # 'text' or 'file'
+    source_content = Column(Text)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    questions = relationship('Question', back_populates='test_paper')
+
+class Question(Base):
+    __tablename__ = 'questions'
+    id = Column(Integer, primary_key=True)
+    test_paper_id = Column(Integer, ForeignKey('test_papers.id'))
+    question_type = Column(String(50)) # e.g., 'single_choice', 'essay'
+    stem = Column(Text)
+    options = Column(JSON) # For multiple choice
+    correct_answer = Column(JSON)
+    test_paper = relationship('TestPaper', back_populates='questions')
+
+# 数据库连接设置
+DATABASE_URL = "sqlite:///f:/ai4exam/backend/test.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 from typing import List, Optional, Union, Dict, Any
 
 
@@ -27,7 +63,7 @@ class FillInTheBlankAnswer(BaseModel):
 class EssayAnswer(BaseModel):
     reference_explanation: str
 
-class Question(BaseModel):
+class QuestionModel(BaseModel):
     id: str
     type: str
     stem: str
@@ -36,7 +72,7 @@ class Question(BaseModel):
 
 class GenerateTestResponse(BaseModel):
     test_id: str
-    questions: List[Question]
+    questions: List[QuestionModel]
 
 class UserSingleChoiceAnswer(BaseModel):
     question_id: str
