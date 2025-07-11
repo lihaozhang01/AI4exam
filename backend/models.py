@@ -53,23 +53,33 @@ class UserFillInTheBlankAnswer(BaseModel):
     question_type: str = "fill_in_the_blank"
     answer_texts: List[str]
 
-class GradeObjectiveQuestionsRequest(BaseModel):
-    test_id: str
-    answers: List[Union[UserSingleChoiceAnswer, UserMultipleChoiceAnswer, UserFillInTheBlankAnswer]]
+class UserEssayAnswer(BaseModel):
+    question_id: str
+    question_type: str = "essay"
+    answer_text: str
 
-class GradeResult(BaseModel):
+class GradeQuestionsRequest(BaseModel):
+    test_id: str
+    answers: List[Union[UserSingleChoiceAnswer, UserMultipleChoiceAnswer, UserFillInTheBlankAnswer, UserEssayAnswer]]
+
+class ObjectiveGradeResult(BaseModel):
     question_id: str
     is_correct: bool
-    user_answer: Any # Can be int, List[int], or List[str]
-    correct_answer: Any # Can be int, List[int], or List[str]
+    user_answer: Any
+    correct_answer: Any
 
-class GradeObjectiveQuestionsResponse(BaseModel):
-    results: List[GradeResult]
+class EssayGradeResult(BaseModel):
+    question_id: str
+    user_answer: str
+    reference_explanation: str
+
+class GradeQuestionsResponse(BaseModel):
+    results: List[Union[ObjectiveGradeResult, EssayGradeResult]]
 
 
 class GenerateOverallFeedbackRequest(BaseModel):
     test_id: str
-    answers: List[Union[UserSingleChoiceAnswer, UserMultipleChoiceAnswer, UserFillInTheBlankAnswer]]
+    answers: List[Union[UserSingleChoiceAnswer, UserMultipleChoiceAnswer, UserFillInTheBlankAnswer, UserEssayAnswer]]
 
 
 class GenerateOverallFeedbackResponse(BaseModel):
@@ -102,3 +112,4 @@ class EvaluateShortAnswerResponse(BaseModel):
     feedback: str
     strengths: List[str]
     areas_for_improvement: List[str]
+    reference_explanation: str

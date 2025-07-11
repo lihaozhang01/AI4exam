@@ -4,38 +4,50 @@ import useTestStore from '../store/useTestStore';
 
 const { TextArea } = Input;
 
-const EssayQuestion = ({ question, index }) => {
-  const { userAnswers, updateUserAnswer, gradingResults } = useTestStore();
-  const result = gradingResults ? gradingResults[question.id] : null;
+const EssayQuestion = ({ question, index, gradingResult }) => {
+  const { userAnswers, updateUserAnswer } = useTestStore();
+  const userAnswer = userAnswers[question.id] || '';
+  // 提交后，gradingResult会有值
+  const isSubmitted = !!gradingResult;
 
   return (
     <Card title={`${index + 1}. 论述题：${question.stem}`} style={{ marginBottom: '20px' }}>
+      <p>你的回答:</p>
       <TextArea
         rows={6}
         onChange={(e) => updateUserAnswer(question.id, e.target.value)}
-        value={userAnswers[question.id]}
-        disabled={!!result} // 如果有结果，则禁用
+        value={userAnswer}
+        disabled={isSubmitted}
+        style={{ marginBottom: '16px' }}
       />
-      {result && (
-        <div style={{ marginTop: '15px' }}>
-          <Divider>AI 批改反馈</Divider>
-          <p><strong>得分: </strong> <Tag color="blue" style={{ fontSize: '16px' }}>{result.score} / 100</Tag></p>
-          <p><strong>总评: </strong> {result.feedback}</p>
-          <List
-            size="small"
-            header={<strong>优点:</strong>}
-            dataSource={result.strengths}
-            renderItem={(item) => <List.Item>✅ {item}</List.Item>}
-            bordered
-            style={{ marginBottom: '10px' }}
-          />
-          <List
-            size="small"
-            header={<strong>待改进:</strong>}
-            dataSource={result.areas_for_improvement}
-            renderItem={(item) => <List.Item>❌ {item}</List.Item>}
-            bordered
-          />
+
+      {isSubmitted && gradingResult && (
+        <div>
+          <Divider>参考答案</Divider>
+          <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '4px' }}>
+            <p>{gradingResult.reference_explanation}</p>
+          </div>
+          {gradingResult.feedback && (
+            <div style={{ marginTop: '16px' }}>
+              <Divider>AI 详细点评</Divider>
+              <p><strong>总评: </strong> {gradingResult.feedback}</p>
+              <List
+                size="small"
+                header={<strong>优点:</strong>}
+                dataSource={gradingResult.strengths || []}
+                renderItem={(item) => <List.Item>✅ {item}</List.Item>}
+                bordered
+                style={{ marginBottom: '10px' }}
+              />
+              <List
+                size="small"
+                header={<strong>待改进:</strong>}
+                dataSource={gradingResult.areas_for_improvement || []}
+                renderItem={(item) => <List.Item>❌ {item}</List.Item>}
+                bordered
+              />
+            </div>
+          )}
         </div>
       )}
     </Card>

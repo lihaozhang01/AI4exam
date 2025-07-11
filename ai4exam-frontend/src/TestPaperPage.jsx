@@ -65,11 +65,10 @@ const TestPaperPage = () => {
       }
 
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
-      const objectiveAnswers = allAnswers.filter(a => a.question_type !== 'essay');
 
-      const response = await axios.post('/api/grade-objective-questions', {
+      const response = await axios.post('/api/grade-questions', {
         test_id: testData.test_id,
-        answers: objectiveAnswers,
+        answers: allAnswers,
       });
 
       setGradingResults(response.data.results);
@@ -160,7 +159,8 @@ const TestPaperPage = () => {
               case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
               case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
               case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
-              case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />;
+              case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />; // 确保传递了 gradingResult
+
               default: return <p>未知题型</p>;
             }
           })()}

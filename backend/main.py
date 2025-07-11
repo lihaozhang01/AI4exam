@@ -11,12 +11,13 @@ from typing import Optional
 from models import (
     GenerateTestConfig,
     GenerateTestResponse,
-    GradeObjectiveQuestionsRequest,
-    GradeObjectiveQuestionsResponse,
+    GradeQuestionsRequest,
+    GradeQuestionsResponse,
     EvaluateShortAnswerRequest,
     EvaluateShortAnswerResponse,
     Question,
-    GradeResult,
+    ObjectiveGradeResult,
+    EssayGradeResult,
     GenerateOverallFeedbackRequest,
     GenerateOverallFeedbackResponse,
     GenerateSingleQuestionFeedbackRequest,
@@ -133,8 +134,8 @@ async def generate_test(
     # 5. 返回结果
     return GenerateTestResponse(test_id=test_id, questions=questions)
 
-@app.post("/grade-objective-questions", response_model=GradeObjectiveQuestionsResponse)
-async def grade_objective_questions(request: GradeObjectiveQuestionsRequest):
+@app.post("/grade-questions", response_model=GradeQuestionsResponse)
+async def grade_questions(request: GradeQuestionsRequest):
     """
     批量批改客观题接口（仅返回对错，不进行AI分析）。
     """
@@ -159,25 +160,46 @@ async def grade_objective_questions(request: GradeObjectiveQuestionsRequest):
         correct_answer = correct_answers_map.get(question_id)
         question = questions_map.get(question_id)
 
-        if correct_answer is None or question is None:
-            continue # Skip if no correct answer is found (e.g., for essay questions)
+        if question is None:
+            continue
 
-        is_correct = False
-        if question.type == 'single_choice':
-            is_correct = (user_response == correct_answer)
-        elif question.type == 'multiple_choice':
-            is_correct = (sorted(user_response) == sorted(correct_answer))
-        elif question.type == 'fill_in_the_blank':
-            is_correct = (set(map(str, user_response)) == set(map(str, correct_answer)))
+        # 根据题目类型分别处理
+        if user_answer_obj.question_type == 'essay':
+            # 确保我们正在处理一个包含 'answer_text' 的对象
+            if hasattr(user_answer_obj, 'answer_text'):
+                results.append(EssayGradeResult(
+                    question_id=question_id,
+                    user_answer=user_answer_obj.answer_text,
+                    reference_explanation=correct_answers_map.get(question_id, "")
+                ))
+        else: # 处理所有客观题
+            user_response = None
+            correct_answer = correct_answers_map.get(question_id)
 
-        results.append(GradeResult(
-            question_id=question_id,
-            is_correct=is_correct,
-            user_answer=user_response,
-            correct_answer=correct_answer
-        ))
+            if correct_answer is None:
+                continue
+            
+            is_correct = False
+            if user_answer_obj.question_type == 'single_choice':
+                user_response = user_answer_obj.answer_index
+                is_correct = (user_response == correct_answer)
+            elif user_answer_obj.question_type == 'multiple_choice':
+                user_response = user_answer_obj.answer_indices
+                # 对列表进行排序，确保顺序不影响判断
+                is_correct = (sorted(user_response) == sorted(correct_answer))
+            elif user_answer_obj.question_type == 'fill_in_the_blank':
+                user_response = user_answer_obj.answer_texts
+                # 同样转换为集合来判断，忽略顺序和重复
+                is_correct = (set(map(str, user_response)) == set(map(str, correct_answer)))
 
-    return GradeObjectiveQuestionsResponse(results=results)
+            results.append(ObjectiveGradeResult(
+                question_id=question_id,
+                is_correct=is_correct,
+                user_answer=user_response,
+                correct_answer=correct_answer
+            ))
+
+    return GradeQuestionsResponse(results=results)
 
 
 @app.post("/generate-overall-feedback", response_model=GenerateOverallFeedbackResponse)
@@ -316,7 +338,11 @@ async def evaluate_short_answer(request: EvaluateShortAnswerRequest):
             json_response_str = match.group(1).strip()
             ai_response = json.loads(json_response_str)
         
-        return EvaluateShortAnswerResponse(**ai_response)
+        # 将AI返回的评估结果和原始的参考答案合并
+        response_data = ai_response
+        response_data['reference_explanation'] = request.question.reference_explanation
+
+        return EvaluateShortAnswerResponse(**response_data)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI evaluation failed: {e}")
