@@ -24,12 +24,15 @@ class MultipleChoiceAnswer(BaseModel):
 class FillInTheBlankAnswer(BaseModel):
     correct_answers: List[str]
 
+class EssayAnswer(BaseModel):
+    reference_explanation: str
+
 class Question(BaseModel):
     id: str
     type: str
     stem: str
     options: Optional[List[str]] = None
-    answer: Union[SingleChoiceAnswer, MultipleChoiceAnswer, FillInTheBlankAnswer, str]
+    answer: Union[SingleChoiceAnswer, MultipleChoiceAnswer, FillInTheBlankAnswer, EssayAnswer, str]
 
 class GenerateTestResponse(BaseModel):
     test_id: str

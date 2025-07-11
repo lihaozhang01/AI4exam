@@ -121,7 +121,9 @@ async def generate_test(
             answers_for_grading[q.id] = q.answer.correct_option_indices
         elif q.type == 'fill_in_the_blank' and hasattr(q.answer, 'correct_answers'):
             answers_for_grading[q.id] = q.answer.correct_answers
-        # 论述题没有标准答案，无需存储
+        elif q.type == 'essay' and hasattr(q.answer, 'reference_explanation'):
+            # 论述题没有标准答案，但可以把参考答案存起来，以便后续查看或给AI评估用
+            answers_for_grading[q.id] = q.answer.reference_explanation
 
     mock_test_data[test_id] = {
         "questions": questions,

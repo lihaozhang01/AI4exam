@@ -1,0 +1,10 @@
+{
+    "description": "关于RESTful API的快速测试",
+    "question_config": [
+        {
+            "type": "essay",
+            "count": 1
+        }
+    ],
+    "difficulty": "中等"
+}
