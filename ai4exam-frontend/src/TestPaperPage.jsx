@@ -1,8 +1,8 @@
 // src/TestPaperPage.jsx (修复版)
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Empty, Button, Divider, message, Checkbox, Alert } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Empty, Button, Divider, message, Checkbox, Alert, Spin } from 'antd';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
 
@@ -40,10 +40,13 @@ const buildAnswersPayload = (userAnswers, questions) => {
 };
 
 const TestPaperPage = () => {
+  const { testId, resultId } = useParams(); // 从URL获取testId或resultId
   const navigate = useNavigate();
   const {
     testData,
+    setTestData, // 新增
     userAnswers,
+    setUserAnswers, // 新增
     isLoading,
     setIsLoading,
     setGradingResults,
@@ -51,10 +54,78 @@ const TestPaperPage = () => {
     overallFeedback,
     setOverallFeedback,
     submissionStatus,
-    setSubmissionStatus,
+    setSubmissionStatus, // 新增
     singleQuestionFeedbacks,
     setSingleQuestionFeedback,
   } = useTestStore();
+
+  useEffect(() => {
+    const fetchTestResult = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/history/${resultId}`);
+        const result = response.data;
+
+        // 1. 设置试卷数据
+        // 注意：历史记录中可能没有完整的 testData，需要根据 test_paper_id 重新获取
+        const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
+        setTestData(testPaperResponse.data);
+
+        // 2. 设置用户答案
+        const answers = JSON.parse(result.user_answers);
+        const formattedAnswers = {};
+        answers.forEach(ans => {
+          let finalAnswer;
+          switch (ans.question_type) {
+            case 'single_choice':
+              finalAnswer = ans.answer_index;
+              break;
+            case 'multiple_choice':
+              finalAnswer = ans.answer_indices;
+              break;
+            case 'fill_in_the_blank':
+              // 后端存储的是数组，前端组件期望的是$$$连接的字符串
+              finalAnswer = ans.answer_texts.join('$$$');
+              break;
+            case 'essay':
+              finalAnswer = ans.answer_text;
+              break;
+            default:
+              finalAnswer = null;
+          }
+          formattedAnswers[ans.question_id] = finalAnswer;
+        });
+        setUserAnswers(formattedAnswers);
+
+        // 3. 设置批改结果
+        setGradingResults(JSON.parse(result.grading_results));
+
+        // 4. 设置页面状态为已提交
+        setSubmissionStatus('submitted_and_showing_answers');
+
+      } catch (error) {
+        console.error("获取历史试卷失败:", error.response ? error.response.data : error.message);
+        message.error("获取历史试卷失败，请稍后重试。" + (error.response ? `(${error.response.status})` : ''));
+        navigate('/history');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (resultId) {
+      fetchTestResult();
+    } else if (!testData && !testId) {
+        // 如果没有resultId，也没有当前试卷数据，则导航到首页
+        // 这可以防止用户直接访问/testpaper页面
+        navigate('/');
+    }
+    // 当组件卸载时，可以考虑清空store状态，但这取决于你的应用逻辑
+    // return () => {
+    //   useTestStore.getState().reset();
+    // };
+  }, [resultId, testId, navigate, setIsLoading, setTestData, setUserAnswers, setGradingResults, setSubmissionStatus]);
+
+
 
   const handleSubmitAndShowAnswers = async () => {
     setIsLoading(true);
@@ -86,8 +157,8 @@ const TestPaperPage = () => {
       setSubmissionStatus('submitted_and_showing_answers');
       message.success('客观题已自动批改！现在可以请求AI进行详细点评。');
     } catch (error) {
-      console.error("Error submitting answers:", error);
-      message.error("提交答案失败，请检查网络连接或稍后再试。");
+      console.error("Error submitting answers:", error.response ? error.response.data : error.message);
+      message.error("提交答案失败，请检查网络连接或稍后再试。" + (error.response ? `(${error.response.status})` : ''));
     } finally {
       setIsLoading(false);
     }
@@ -122,8 +193,8 @@ const TestPaperPage = () => {
       setOverallFeedback(response.data.feedback);
       message.success('AI分析完成！');
     } catch (error) {
-      console.error("Error requesting AI feedback:", error);
-      message.error("请求AI反馈失败，请稍后再试。");
+      console.error("Error requesting AI feedback:", error.response ? error.response.data : error.message);
+      message.error("请求AI反馈失败，请稍后再试。" + (error.response ? `(${error.response.status})` : ''));
     } finally {
       setIsLoading(false);
     }
@@ -158,13 +229,17 @@ const TestPaperPage = () => {
       setSingleQuestionFeedback(questionId, response.data.feedback);
       message.success(`题目 ${questionId} 的AI点评已生成！`);
     } catch (error) {
-      console.error('Error requesting single question feedback:', error);
-      message.error('请求该题反馈失败，请稍后再试。');
+      console.error('Error requesting single question feedback:', error.response ? error.response.data : error.message);
+      message.error('请求该题反馈失败，请稍后再试。' + (error.response ? `(${error.response.status})` : ''));
     }
   };
 
 
   // ... (组件的其余部分保持不变)
+  if (isLoading) {
+    return <div style={{ textAlign: 'center', marginTop: '50px' }}><Spin size="large" tip="加载中..." /></div>;
+  }
+
   if (!testData || !testData.questions) {
     return (<Empty description="尚未生成试卷..."><Button onClick={() => navigate('/')}>返回出题</Button></Empty>);
   }

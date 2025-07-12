@@ -1,6 +1,7 @@
 // src/store/useTestStore.js
 import { create } from 'zustand';
 
+
 const useTestStore = create((set) => ({
   testData: null,
   isLoading: false,
@@ -28,6 +29,8 @@ const useTestStore = create((set) => ({
       },
     }));
   },
+
+  setUserAnswers: (answers) => set({ userAnswers: answers }),
 
   // 新增：保存批改结果
   setGradingResults: (results) => set({ gradingResults: results }),

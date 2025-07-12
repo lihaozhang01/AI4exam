@@ -1,5 +1,6 @@
 from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel
+import datetime
 
 # 所有 Pydantic 模型都移到这里
 class QuestionConfig(BaseModel):
@@ -89,3 +90,14 @@ class EvaluateShortAnswerResponse(BaseModel):
     strengths: List[str]
     areas_for_improvement: List[str]
     reference_explanation: str
+
+# --- Test Paper History --- 
+class TestPaperResultSchema(BaseModel):
+    id: int
+    test_paper_id: int
+    user_answers: List[Any]
+    grading_results: List[Any]
+    created_at: datetime.datetime
+
+    class Config:
+        orm_mode = True

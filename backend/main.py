@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List
 
 import google.generativeai as genai
 from fastapi import Header, FastAPI, UploadFile, File, Form, Depends, HTTPException
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 # 清晰地从不同模块导入
 from . import services
 from . import schemas
-from .models import Base, engine, get_db, TestPaper, DBQuestion
+from .models import Base, engine, get_db, TestPaper, DBQuestion, TestPaperResult
 
 # --- App and Configuration Setup ---
 
@@ -24,7 +24,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,6 +101,8 @@ async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = 
         )
         for user_answer in request.answers if user_answer.question_id in questions_map
     ]
+    services.save_test_result(db, int(request.test_id), request.answers, results)
+
     return schemas.GradeQuestionsResponse(results=results)
 
 
@@ -140,3 +142,13 @@ async def generate_single_question_feedback(request: schemas.GenerateSingleQuest
 async def evaluate_short_answer(request: schemas.EvaluateShortAnswerRequest, _: None = Depends(configure_genai)):
     response = await services.evaluate_essay_with_ai(request)
     return response
+
+
+@app.get("/history", response_model=List[schemas.TestPaperResultSchema])
+def get_history(db: Session = Depends(get_db)):
+    return services.get_all_test_results(db)
+
+
+@app.get("/history/{result_id}", response_model=schemas.TestPaperResultSchema)
+def get_history_result(result_id: int, db: Session = Depends(get_db)):
+    return services.get_test_result(db, result_id)

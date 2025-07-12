@@ -8,6 +8,7 @@ import 'antd/dist/reset.css';
 import TestPaperPage from './TestPaperPage';
 // 引入我们将要创建的真实表单页面
 import TestFormPage from './TestFormPage';
+import HistoryPage from './HistoryPage'; // 引入历史页面
 
 // 试卷页的占位符
 
@@ -48,12 +49,14 @@ function App() {
           <Menu
             theme="dark"
             mode="horizontal"
-            selectedKeys={[location.pathname]}
+            defaultSelectedKeys={[location.pathname]}
             style={{ lineHeight: '64px' }}
-          >
-            <Menu.Item key="/"><Link to="/">出题表单</Link></Menu.Item>
-            <Menu.Item key="/test"><Link to="/test">查看试卷</Link></Menu.Item>
-          </Menu>
+            items={[
+              { key: '/', label: <Link to="/">出题表单</Link> },
+              { key: '/test', label: <Link to="/test">查看试卷</Link> },
+              { key: '/history', label: <Link to="/history">历史试卷</Link> },
+            ]}
+          />
         </div>
         <Button type="text" icon={<SettingOutlined style={{ color: 'white', fontSize: '20px' }} />} onClick={showSettingsModal} />
       </Header>
@@ -64,6 +67,8 @@ function App() {
           <Routes>
             <Route path="/" element={<TestFormPage />} />
             <Route path="/test" element={<TestPaperPage />} />
+<Route path="/history" element={<HistoryPage />} />
+            <Route path="/testpaper/:resultId" element={<TestPaperPage />} />
           </Routes>
         </div>
       </Content>

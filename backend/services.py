@@ -71,6 +71,31 @@ GRADING_STRATEGIES: Dict[str, Callable[[schemas.UserAnswer, Dict], bool]] = {
     'fill_in_blank': _grade_fill_in_blank,
 }
 
+def save_test_result(db: Session, test_id: int, user_answers: List[schemas.UserAnswer], grading_results: List[schemas.ObjectiveGradeResult]):
+    """Saves the results of a completed test paper to the database."""
+    db_result = models.TestPaperResult(
+        test_paper_id=test_id,
+        user_answers=[ans.model_dump() for ans in user_answers],
+        grading_results=[res.model_dump() for res in grading_results]
+    )
+    db.add(db_result)
+    db.commit()
+    db.refresh(db_result)
+    return db_result
+
+def get_all_test_results(db: Session):
+    """Fetches all test paper results from the database."""
+    return db.query(models.TestPaperResult).order_by(models.TestPaperResult.created_at.desc()).all()
+
+def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
+    """Fetches a single test paper result by its ID."""
+    result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
+    # Manually load the related test_paper data
+    result.test_paper  # Accessing this attribute triggers the lazy load
+    return result
+
 def grade_objective_question(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> bool:
     """根据题型分发并批改单个客观题。"""
     grading_func = GRADING_STRATEGIES.get(question.question_type)

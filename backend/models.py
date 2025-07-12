@@ -12,6 +12,15 @@ class TestPaper(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     questions = relationship('DBQuestion', back_populates='test_paper') # 已修正
 
+class TestPaperResult(Base):
+    __tablename__ = 'test_paper_results'
+    id = Column(Integer, primary_key=True, index=True)
+    test_paper_id = Column(Integer, ForeignKey('test_papers.id'))
+    user_answers = Column(JSON) # Store user's answers
+    grading_results = Column(JSON) # Store grading results
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 class DBQuestion(Base):
     __tablename__ = 'questions'
     id = Column(Integer, primary_key=True, index=True)
