@@ -25,7 +25,7 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
         <div>
           <Divider>参考答案</Divider>
           <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '4px' }}>
-            <p>{gradingResult.reference_explanation}</p>
+            <p>{question.answer.explanation}</p>
           </div>
           {gradingResult.feedback && (
             <div style={{ marginTop: '16px' }}>

@@ -22,7 +22,7 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
         <Alert
           style={{ marginTop: '15px' }}
           type={gradingResult.is_correct ? 'success' : 'error'}
-          message={`你的答案: ${formatAnswer(gradingResult.user_answer || [])} | 正确答案: ${formatAnswer(gradingResult.correct_answer || [])}`} 
+          message={`你的答案: ${formatAnswer(userAnswers[question.id] || [])} | 正确答案: ${formatAnswer(question.answer.indexes || [])}`}
           description={!gradingResult.is_correct ? `解析：${question.answer.explanation}` : null}
         />
       )}

@@ -20,14 +20,17 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
         <Alert
           style={{ marginTop: '15px' }}
           type={gradingResult.is_correct ? 'success' : 'error'}
-          message={
-            <>
-              你的答案: {String.fromCharCode(65 + gradingResult.user_answer)} |
-              正确答案: {String.fromCharCode(65 + gradingResult.correct_answer)}
-              {gradingResult.is_correct ? '  回答正确！' : ''}
-            </>
+          message={`你的答案: ${String.fromCharCode(65 + userAnswers[question.id])} | 正确答案: ${String.fromCharCode(65 + question.answer.index)}`}
+          description={
+            <div>
+              {gradingResult.is_correct ? (
+                <Tag color="success">回答正确</Tag>
+              ) : (
+                <Tag color="error">回答错误</Tag>
+              )}
+              {!gradingResult.is_correct && <div>解析：{question.answer.explanation}</div>}
+            </div>
           }
-          description={!gradingResult.is_correct ? `解析：${question.answer.explanation}` : null}
         />
       )}
     </Card>

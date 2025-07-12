@@ -12,49 +12,24 @@ GENERATE_TEST_PROMPT = """
 {config_json}
 ---
 
-**JSON输出格式示例:**
+**JSON输出格式:**
 ```json
 {{
   "questions": [
     {{
-      "id": "q_sc_1",
-      "type": "single_choice",
-      "stem": "在Python中，以下哪个关键字用于定义一个函数？",
-      "options": ["func", "def", "function", "define"],
+      "id": "<string>",
+      "type": "<string: 'single_choice'|'multiple_choice'|'fill_in_the_blank'|'essay'>",
+      "stem": "<string>",
+      "options": "<list[string]>",
       "answer": {{
-        "correct_option_index": 1,
-        "explanation": "在Python中，`def` 是用来定义函数的关键字。"
-      }}
-    }},
-    {{
-      "id": "q_mc_1",
-      "type": "multiple_choice",
-      "stem": "以下哪些是面向对象编程（OOP）的核心概念？",
-      "options": ["封装", "继承", "过程", "多态"],
-      "answer": {{
-        "correct_option_indices": [0, 1, 3],
-        "explanation": "面向对象编程的三大核心特征是封装、继承和多态。"
-      }}
-    }},
-    {{
-      "id": "q_fb_1",
-      "type": "fill_in_the_blank",
-      "stem": "光合作用主要在植物细胞的______中进行。",
-      "options": [],
-      "answer": {{
-        "correct_answers": ["叶绿体"],
-        "explanation": "叶绿体是进行光合作用的细胞器。"
-      }}
-    }},
-    {{
-      "id": "q_es_1",
-      "type": "essay",
-      "stem": "请简述什么是RESTful API及其主要特点。",
-      "options": [],
-      "answer": {{
-        "reference_explanation": "RESTful API是一种遵循REST架构风格的网络服务设计模式。主要特点包括：客户端-服务器架构、无状态、统一接口、资源导向。"
+        // 根据type不同，结构也不同
+        // single_choice: {{ "index": <integer>, "explanation": "<string>" }}
+        // multiple_choice: {{ "indexes": <list[integer]>, "explanation": "<string>" }}
+        // fill_in_the_blank: {{ "texts": <list[string]>, "explanation": "<string>" }}
+        // essay: {{ "reference_explanation": "<string>" }}
       }}
     }}
+    // ... more questions
   ]
 }}
 ```
