@@ -73,12 +73,12 @@ const TestPaperPage = () => {
         return;
       }
 
-      const response = await axios.post('/api/grade-questions', {
+      const response = await axios.post('http://127.0.0.1:8000/grade-questions', {
         test_id: testData.test_id,
         answers: allAnswers,
       }, {
         headers: {
-          'X-API-KEY': apiKey,
+          'X-Goog-Api-Key': apiKey,
         }
       });
 
@@ -111,12 +111,12 @@ const TestPaperPage = () => {
         return;
       }
 
-      const response = await axios.post('/api/generate-overall-feedback', {
+      const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', {
         test_id: testData.test_id,
         answers: answersToSend,
       }, {
         headers: {
-          'X-API-KEY': apiKey,
+          'X-Goog-Api-Key': apiKey,
         }
       });
       setOverallFeedback(response.data.feedback);
@@ -146,13 +146,13 @@ const TestPaperPage = () => {
         return; // No loading state change needed here as it's per-question
       }
 
-      const response = await axios.post('/api/generate-single-question-feedback', {
+      const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', {
         test_id: testData.test_id,
         question_id: question.id,
         user_answer: userAnswer, // 发送处理过的答案
       }, {
         headers: {
-          'X-API-KEY': apiKey,
+          'X-Goog-Api-Key': apiKey,
         }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);

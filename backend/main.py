@@ -27,10 +27,20 @@ from .models import (
 )
 from .prompts import GENERATE_TEST_PROMPT, EVALUATE_ESSAY_PROMPT, OVERALL_FEEDBACK_PROMPT, SINGLE_QUESTION_FEEDBACK_PROMPT
 
-# Configure Google AI
-# IMPORTANT: In a real-world application, use a secure way to manage API keys,
-# such as environment variables or a secret management service.
-genai.configure(api_key="AIzaSyCoG7xuzfPYVgbxSni6FPTC1YiV48UTi3w")
+def configure_genai(x_goog_api_key: Optional[str] = Header(None, alias="X-Goog-Api-Key")):
+    """
+    Dependency function to configure Google AI with the API key from the request header.
+    """
+    api_key = x_goog_api_key or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Google API Key is missing. Please provide it in the 'X-Goog-Api-Key' header."
+        )
+    try:
+        genai.configure(api_key=api_key)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to configure Google AI: {e}")
 
 # Create database tables on startup
 from .models import Base, engine
@@ -59,7 +69,8 @@ async def generate_test(
     source_file: Optional[UploadFile] = File(None),
     source_text: Optional[str] = Form(None),
     config_json: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(configure_genai)
 ):
     """
     生成试卷接口。
@@ -221,7 +232,7 @@ async def grade_questions(request: GradeQuestionsRequest, db: Session = Depends(
 
 
 @app.post("/generate-overall-feedback", response_model=GenerateOverallFeedbackResponse)
-async def generate_overall_feedback(request: GenerateOverallFeedbackRequest, db: Session = Depends(get_db)):
+async def generate_overall_feedback(request: GenerateOverallFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
     """
     为整个试卷生成AI反馈和点评。
     """
@@ -275,7 +286,7 @@ async def generate_overall_feedback(request: GenerateOverallFeedbackRequest, db:
         raise HTTPException(status_code=500, detail=f"AI feedback generation failed: {e}")
 
 @app.post("/generate-single-question-feedback", response_model=GenerateSingleQuestionFeedbackResponse)
-async def generate_single_question_feedback(request: GenerateSingleQuestionFeedbackRequest, db: Session = Depends(get_db)):
+async def generate_single_question_feedback(request: GenerateSingleQuestionFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
     """
     为单个问题生成AI反馈。
     """
@@ -324,7 +335,7 @@ async def generate_single_question_feedback(request: GenerateSingleQuestionFeedb
         raise HTTPException(status_code=500, detail=f"AI feedback generation failed: {e}")
 
 @app.post("/evaluate-short-answer", response_model=EvaluateShortAnswerResponse)
-async def evaluate_short_answer(request: EvaluateShortAnswerRequest):
+async def evaluate_short_answer(request: EvaluateShortAnswerRequest, _: None = Depends(configure_genai)):
     """
     批改简答/论述题接口。
     """

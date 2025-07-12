@@ -87,7 +87,7 @@ const TestFormPage = () => {
       const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'X-API-KEY': apiKey,
+          'X-Goog-Api-Key': apiKey,
         }
       });
 
