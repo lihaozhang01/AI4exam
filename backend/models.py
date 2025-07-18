@@ -19,6 +19,7 @@ class TestPaperResult(Base):
     user_answers = Column(JSON) # Store user's answers
     grading_results = Column(JSON) # Store grading results
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    test_paper = relationship('TestPaper')
 
 
 class DBQuestion(Base):

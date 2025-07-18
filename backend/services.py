@@ -4,7 +4,7 @@ from typing import Dict, Any, Callable, List
 
 import google.generativeai as genai
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 # 从 schemas 导入 Pydantic 模型，从 models 导入 SQLAlchemy 模型
 from . import schemas
@@ -88,12 +88,15 @@ def get_all_test_results(db: Session):
     return db.query(models.TestPaperResult).order_by(models.TestPaperResult.created_at.desc()).all()
 
 def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
-    """Fetches a single test paper result by its ID."""
-    result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
+    """Fetches a single test paper result by its ID, eagerly loading the test paper data."""
+    result = (
+        db.query(models.TestPaperResult)
+        .options(joinedload(models.TestPaperResult.test_paper))
+        .filter(models.TestPaperResult.id == result_id)
+        .first()
+    )
     if not result:
         raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
-    # Manually load the related test_paper data
-    result.test_paper  # Accessing this attribute triggers the lazy load
     return result
 
 def grade_objective_question(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> bool:

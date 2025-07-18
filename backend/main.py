@@ -82,11 +82,22 @@ async def generate_test(
     return schemas.GenerateTestResponse(test_id=str(db_test_paper.id), questions=questions_data)
 
 
-@app.get("/get-test/{test_id}", response_model=schemas.GenerateTestResponse)
+@app.get("/test-papers/{test_id}", response_model=schemas.GenerateTestResponse)
 async def get_test(test_id: int, db: Session = Depends(get_db)):
     test_paper = services.get_test_paper_by_id(db, test_id)
-    questions = [schemas.QuestionModel.model_validate(q, from_attributes=True) for q in test_paper.questions]
-    return schemas.GenerateTestResponse(test_id=str(test_paper.id), questions=questions)
+    questions_to_return = []
+    for q in test_paper.questions:
+        # 从DBQuestion构建QuestionModel
+        question_data = {
+            "id": str(q.id),
+            "type": q.question_type, # 确保字段名称匹配
+            "stem": q.stem,
+            "options": q.options,
+            "answer": q.correct_answer # 确保answer字段被填充
+        }
+        questions_to_return.append(schemas.QuestionModel(**question_data))
+
+    return schemas.GenerateTestResponse(test_id=str(test_paper.id), questions=questions_to_return)
 
 
 @app.post("/grade-questions", response_model=schemas.GradeQuestionsResponse)
