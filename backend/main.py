@@ -57,27 +57,22 @@ async def generate_test(
     knowledge_content = await source_file.read().decode('utf-8') if source_file else source_text
 
     ai_response = await services.generate_test_from_ai(knowledge_content, config)
-    questions_data = [schemas.QuestionModel(**q) for q in ai_response.get('questions', [])]
 
-    db_test_paper = TestPaper(source_type='file' if source_file else 'text', source_content=knowledge_content)
-    db.add(db_test_paper)
-    db.commit()
-    db.refresh(db_test_paper)
+    # 使用service函数创建试卷和问题
+    source_type = 'file' if source_file else 'text'
+    db_test_paper = services.create_test_paper(db, source_type, knowledge_content, ai_response)
 
-    for q_model in questions_data:
-        db.add(DBQuestion(
-            test_paper_id=db_test_paper.id,
-            question_type=q_model.type,
-            stem=q_model.stem,
-            options=q_model.options,
-            correct_answer=q_model.answer.model_dump()
-        ))
-    db.commit()
-
-    # 在返回前，为每个问题补充数据库生成的ID
-    db.refresh(db_test_paper)
-    for q_model, db_q in zip(questions_data, db_test_paper.questions):
-        q_model.id = str(db_q.id)
+    # 从数据库记录构建响应模型
+    questions_data = [
+        schemas.QuestionModel(
+            id=str(q.id),
+            type=q.question_type,
+            stem=q.stem,
+            options=q.options,
+            answer=q.correct_answer
+        )
+        for q in db_test_paper.questions
+    ]
 
     return schemas.GenerateTestResponse(test_id=str(db_test_paper.id), questions=questions_data)
 
@@ -162,4 +157,15 @@ def get_history(db: Session = Depends(get_db)):
 
 @app.get("/history/{result_id}", response_model=schemas.TestPaperResultSchema)
 def get_history_result(result_id: int, db: Session = Depends(get_db)):
-    return services.get_test_result(db, result_id)
+    result = services.get_test_result(db, result_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Test result not found")
+    return result
+
+
+@app.delete("/history/{result_id}", status_code=204)
+def delete_history_result(result_id: int, db: Session = Depends(get_db)):
+    success = services.delete_test_result(db, result_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Test result not found")
+    return {"message": "Test result deleted successfully"}

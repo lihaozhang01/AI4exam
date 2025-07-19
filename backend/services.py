@@ -37,6 +37,34 @@ def get_test_paper_by_id(db: Session, test_id: int) -> models.TestPaper:
         raise HTTPException(status_code=404, detail=f"Test with ID {test_id} not found.")
     return test_paper
 
+def create_test_paper(db: Session, source_type: str, source_content: str, ai_response: Dict[str, Any]) -> models.TestPaper:
+    """Creates a test paper record in the database, including a generated name."""
+    # 优先从AI响应中获取标题，否则生成默认标题
+    paper_name = ai_response.get('title', f"基于{source_type}的试卷 - {source_content[:20]}...")
+
+    db_test_paper = models.TestPaper(
+        name=paper_name,
+        source_type=source_type,
+        source_content=source_content
+    )
+    db.add(db_test_paper)
+
+    # 将AI生成的问题添加到数据库
+    questions_data = ai_response.get('questions', [])
+    for q_data in questions_data:
+        db_question = models.DBQuestion(
+            test_paper=db_test_paper, # Link back to the paper
+            question_type=q_data.get('type'),
+            stem=q_data.get('stem'),
+            options=q_data.get('options'),
+            correct_answer=q_data.get('answer')
+        )
+        db.add(db_question)
+
+    db.commit()
+    db.refresh(db_test_paper)
+    return db_test_paper
+
 def get_question_by_id(db: Session, question_id: int) -> models.DBQuestion:
     """通过ID从数据库获取问题，如果找不到则抛出404异常。"""
     question = db.query(models.DBQuestion).filter(models.DBQuestion.id == question_id).first()
@@ -84,8 +112,13 @@ def save_test_result(db: Session, test_id: int, user_answers: List[schemas.UserA
     return db_result
 
 def get_all_test_results(db: Session):
-    """Fetches all test paper results from the database."""
-    return db.query(models.TestPaperResult).order_by(models.TestPaperResult.created_at.desc()).all()
+    """Fetches all test paper results, including the test paper name."""
+    return (
+        db.query(models.TestPaperResult)
+        .options(joinedload(models.TestPaperResult.test_paper))
+        .order_by(models.TestPaperResult.created_at.desc())
+        .all()
+    )
 
 def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
     """Fetches a single test paper result by its ID, eagerly loading the test paper data."""
@@ -98,6 +131,16 @@ def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
     if not result:
         raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
     return result
+
+def delete_test_result(db: Session, result_id: int) -> bool:
+    """Deletes a test result from the database by its ID."""
+    result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
+    if result:
+        db.delete(result)
+        db.commit()
+        return True
+    return False
+
 
 def grade_objective_question(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> bool:
     """根据题型分发并批改单个客观题。"""

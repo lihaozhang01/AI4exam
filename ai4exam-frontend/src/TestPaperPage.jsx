@@ -1,7 +1,7 @@
 // src/TestPaperPage.jsx
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Empty, Button, Divider, message, Checkbox, Alert, Spin, Space } from 'antd';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
@@ -42,6 +42,7 @@ const buildAnswersPayload = (userAnswers, questions) => {
 const TestPaperPage = () => {
   const { testId, resultId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     testData,
     setTestData,
@@ -134,7 +135,7 @@ const TestPaperPage = () => {
     } else if (!testData) {
       navigate('/');
     }
-  }, [resultId, testId, navigate]);
+  }, [resultId, testId, navigate, location.key]);
 
 
 
@@ -177,7 +178,9 @@ const TestPaperPage = () => {
 
   const handleRetakeTest = () => {
     if (originalTestId) {
-      navigate(`/testpaper/${originalTestId}`);
+      // 重置状态并在导航时传递一个新的key，以强制useEffect重新运行
+      reset(); 
+      navigate(`/testpaper/${originalTestId}`, { state: { key: Date.now() } });
     }
   };
 
@@ -264,13 +267,7 @@ const TestPaperPage = () => {
 
   return (
     <div>
-      {resultId && (
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <Button type="primary" onClick={handleRetakeTest}>
-            重新作答
-          </Button>
-        </div>
-      )}
+
       <h1 style={{ textAlign: 'center', marginBottom: '24px' }}>AI 智能模拟试卷</h1>
       {overallFeedback && (
         <Alert
@@ -324,11 +321,16 @@ const TestPaperPage = () => {
           </Button>
         )}
         {submissionStatus === 'submitted_and_showing_answers' && (
-          <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}>
-            {isLoading ? '正在请求AI分析...' : '请求AI进行分析'}
-          </Button>
+          <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
+            <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}>
+              {isLoading ? '正在请求AI分析...' : '请求AI进行分析'}
+            </Button>
+            <Button size="large" onClick={handleRetakeTest}>
+              重新作答
+            </Button>
+          </Space>
         )}
-        {submissionStatus !== 'not_submitted' && gradingResults && (
+        {submissionStatus === 'submitted_and_showing_answers' && gradingResults && (
           <p style={{ marginTop: '16px', color: '#888' }}>分析完成后，你还可以针对单个题目请求AI进行更详细的点评。</p>
         )}
       </div>

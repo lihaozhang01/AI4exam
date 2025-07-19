@@ -7,7 +7,7 @@ const useTestStore = create((set) => ({
   isLoading: false,
   userAnswers: {},
   gradingResults: null, // 存放批改结果 { question_id: result }
-  submissionStatus: 'not_submitted', // not_submitted, submitted_and_showing_answers
+  submissionStatus: 'in_progress', // in_progress, submitted_and_showing_answers
   overallFeedback: null, // 存储整卷的AI反馈
   singleQuestionFeedbacks: {}, // 存储单个问题的AI反馈 { question_id: feedback }
 
@@ -15,7 +15,7 @@ const useTestStore = create((set) => ({
     testData: data,
     userAnswers: {},
     gradingResults: null, // 生成新试卷时，清空所有旧数据
-    submissionStatus: 'not_submitted', // 生成新试卷时，重置提交状态
+    submissionStatus: 'in_progress', // 生成新试卷时，重置提交状态为进行中
     overallFeedback: null,
     singleQuestionFeedbacks: {},
   }),
@@ -52,7 +52,7 @@ const useTestStore = create((set) => ({
     isLoading: false,
     userAnswers: {},
     gradingResults: null,
-    submissionStatus: 'not_submitted',
+    submissionStatus: 'in_progress', // 重置时也直接设为进行中
     overallFeedback: null,
     singleQuestionFeedbacks: {},
   }),

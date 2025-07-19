@@ -96,7 +96,8 @@ const TestFormPage = () => {
       message.success('试卷生成成功！正在跳转...');
 
       // 4. 跳转到试卷页面
-      navigate('/test');
+      const testId = response.data.test_id;
+      navigate(`/testpaper/${testId}`);
 
     } catch (error) {
       console.error("API Error:", error);

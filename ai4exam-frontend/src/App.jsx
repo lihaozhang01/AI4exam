@@ -53,7 +53,6 @@ function App() {
             style={{ lineHeight: '64px' }}
             items={[
               { key: '/', label: <Link to="/">出题表单</Link> },
-              { key: '/test', label: <Link to="/test">查看试卷</Link> },
               { key: '/history', label: <Link to="/history">历史试卷</Link> },
             ]}
           />
@@ -66,8 +65,6 @@ function App() {
         <div style={{ background: '#fff', padding: 24, flex: 1 }}>
           <Routes>
             <Route path="/" element={<TestFormPage />} />
-            <Route path="/test" element={<TestPaperPage />} />
-
 <Route path="/history" element={<HistoryPage />} />
                         <Route path="/testpaper/:testId" element={<TestPaperPage />} />
             <Route path="/history/:resultId" element={<TestPaperPage />} />
