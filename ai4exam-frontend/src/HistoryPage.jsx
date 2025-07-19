@@ -48,7 +48,7 @@ function HistoryPage() {
         dataSource={history}
         renderItem={item => (
           <List.Item
-            actions={[<Link to={`/testpaper/${item.id}`}>查看详情</Link>]}
+            actions={[<Link to={`/history/${item.id}`}>查看详情</Link>]}
           >
             <List.Item.Meta
               title={`试卷 #${item.test_paper_id}`}

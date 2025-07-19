@@ -1,8 +1,8 @@
-// src/TestPaperPage.jsx (修复版)
+// src/TestPaperPage.jsx
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Empty, Button, Divider, message, Checkbox, Alert, Spin } from 'antd';
+import { Empty, Button, Divider, message, Checkbox, Alert, Spin, Space } from 'antd';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
 
@@ -40,13 +40,13 @@ const buildAnswersPayload = (userAnswers, questions) => {
 };
 
 const TestPaperPage = () => {
-  const { testId, resultId } = useParams(); // 从URL获取testId或resultId
+  const { testId, resultId } = useParams();
   const navigate = useNavigate();
   const {
     testData,
-    setTestData, // 新增
+    setTestData,
     userAnswers,
-    setUserAnswers, // 新增
+    setUserAnswers,
     isLoading,
     setIsLoading,
     setGradingResults,
@@ -54,25 +54,42 @@ const TestPaperPage = () => {
     overallFeedback,
     setOverallFeedback,
     submissionStatus,
-    setSubmissionStatus, // 新增
+    setSubmissionStatus,
     singleQuestionFeedbacks,
     setSingleQuestionFeedback,
+    reset,
   } = useTestStore();
 
+  const [originalTestId, setOriginalTestId] = useState(null);
+
   useEffect(() => {
-    const fetchTestResult = async () => {
+    const fetchTestPaper = async (id) => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/history/${resultId}`);
+        const response = await axios.get(`http://127.0.0.1:8000/test-papers/${id}`);
+        reset();
+        setTestData(response.data);
+        setSubmissionStatus('in_progress');
+        setOriginalTestId(id);
+      } catch (error) {
+        console.error("获取新试卷失败:", error.response ? error.response.data : error.message);
+        message.error("获取新试卷失败，请返回首页重试。" + (error.response ? `(${error.response.status})` : ''));
+        navigate('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const fetchTestResult = async (id) => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/history/${id}`);
         const result = response.data;
 
-        // 1. 设置试卷数据
-        // 注意：历史记录中可能没有完整的 testData，需要根据 test_paper_id 重新获取
         const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
         setTestData(testPaperResponse.data);
 
-        // 2. 设置用户答案
-        const answers = JSON.parse(result.user_answers);
+        const answers = result.user_answers;
         const formattedAnswers = {};
         answers.forEach(ans => {
           let finalAnswer;
@@ -84,7 +101,6 @@ const TestPaperPage = () => {
               finalAnswer = ans.answer_indices;
               break;
             case 'fill_in_the_blank':
-              // 后端存储的是数组，前端组件期望的是$$$连接的字符串
               finalAnswer = ans.answer_texts.join('$$$');
               break;
             case 'essay':
@@ -97,11 +113,10 @@ const TestPaperPage = () => {
         });
         setUserAnswers(formattedAnswers);
 
-        // 3. 设置批改结果
-        setGradingResults(JSON.parse(result.grading_results));
+        setGradingResults(result.grading_results);
 
-        // 4. 设置页面状态为已提交
         setSubmissionStatus('submitted_and_showing_answers');
+        setOriginalTestId(result.test_paper_id);
 
       } catch (error) {
         console.error("获取历史试卷失败:", error.response ? error.response.data : error.message);
@@ -113,17 +128,13 @@ const TestPaperPage = () => {
     };
 
     if (resultId) {
-      fetchTestResult();
-    } else if (!testData && !testId) {
-        // 如果没有resultId，也没有当前试卷数据，则导航到首页
-        // 这可以防止用户直接访问/testpaper页面
-        navigate('/');
+      fetchTestResult(resultId);
+    } else if (testId) {
+      fetchTestPaper(testId);
+    } else if (!testData) {
+      navigate('/');
     }
-    // 当组件卸载时，可以考虑清空store状态，但这取决于你的应用逻辑
-    // return () => {
-    //   useTestStore.getState().reset();
-    // };
-  }, [resultId, testId, navigate, setIsLoading, setTestData, setUserAnswers, setGradingResults, setSubmissionStatus]);
+  }, [resultId, testId, navigate]);
 
 
 
@@ -164,7 +175,14 @@ const TestPaperPage = () => {
     }
   };
 
+  const handleRetakeTest = () => {
+    if (originalTestId) {
+      navigate(`/testpaper/${originalTestId}`);
+    }
+  };
+
   const handleRequestAiFeedback = async () => {
+
     setIsLoading(true);
     message.info('正在请求AI对整卷进行分析，请稍候...');
     try {
@@ -246,6 +264,13 @@ const TestPaperPage = () => {
 
   return (
     <div>
+      {resultId && (
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <Button type="primary" onClick={handleRetakeTest}>
+            重新作答
+          </Button>
+        </div>
+      )}
       <h1 style={{ textAlign: 'center', marginBottom: '24px' }}>AI 智能模拟试卷</h1>
       {overallFeedback && (
         <Alert
@@ -293,7 +318,7 @@ const TestPaperPage = () => {
       ))}
       <Divider />
       <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        {submissionStatus === 'not_submitted' && (
+        {submissionStatus === 'in_progress' && (
           <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}>
             提交并查看答案
           </Button>

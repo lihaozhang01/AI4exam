@@ -67,8 +67,10 @@ function App() {
           <Routes>
             <Route path="/" element={<TestFormPage />} />
             <Route path="/test" element={<TestPaperPage />} />
+
 <Route path="/history" element={<HistoryPage />} />
-            <Route path="/testpaper/:resultId" element={<TestPaperPage />} />
+                        <Route path="/testpaper/:testId" element={<TestPaperPage />} />
+            <Route path="/history/:resultId" element={<TestPaperPage />} />
           </Routes>
         </div>
       </Content>

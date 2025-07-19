@@ -45,6 +45,17 @@ const useTestStore = create((set) => ({
       [questionId]: feedback,
     },
   })),
+
+  // 新增：重置所有状态到初始值
+  reset: () => set({
+    testData: null,
+    isLoading: false,
+    userAnswers: {},
+    gradingResults: null,
+    submissionStatus: 'not_submitted',
+    overallFeedback: null,
+    singleQuestionFeedbacks: {},
+  }),
 }));
 
 export default useTestStore;
