@@ -15,6 +15,7 @@ GENERATE_TEST_PROMPT = """
 **JSON输出格式:**
 ```json
 {{
+  "title": "<string>", // 根据知识源和要求，生成一个简洁、有概括性的试卷标题
   "questions": [
     {{
       "id": "<string>",

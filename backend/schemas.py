@@ -92,12 +92,22 @@ class EvaluateShortAnswerResponse(BaseModel):
     reference_explanation: str
 
 # --- Test Paper History --- 
+class TestPaperSchema(BaseModel):
+    id: int
+    name: str
+    source_type: str
+    created_at: datetime.datetime
+
+    class Config:
+        orm_mode = True
+
 class TestPaperResultSchema(BaseModel):
     id: int
     test_paper_id: int
     user_answers: List[Any]
     grading_results: List[Any]
     created_at: datetime.datetime
+    test_paper: TestPaperSchema # 嵌套的TestPaper信息
 
     class Config:
         orm_mode = True

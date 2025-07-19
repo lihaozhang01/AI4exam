@@ -65,8 +65,8 @@ function App() {
         <div style={{ background: '#fff', padding: 24, flex: 1 }}>
           <Routes>
             <Route path="/" element={<TestFormPage />} />
-<Route path="/history" element={<HistoryPage />} />
-                        <Route path="/testpaper/:testId" element={<TestPaperPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/testpaper/:testId" element={<TestPaperPage />} />
             <Route path="/history/:resultId" element={<TestPaperPage />} />
           </Routes>
         </div>

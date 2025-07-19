@@ -179,7 +179,7 @@ const TestPaperPage = () => {
   const handleRetakeTest = () => {
     if (originalTestId) {
       // 重置状态并在导航时传递一个新的key，以强制useEffect重新运行
-      reset(); 
+      reset();
       navigate(`/testpaper/${originalTestId}`, { state: { key: Date.now() } });
     }
   };
