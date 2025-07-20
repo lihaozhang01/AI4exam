@@ -123,21 +123,34 @@ GRADING_STRATEGIES: Dict[str, Callable[[schemas.UserAnswer, Dict], bool]] = {
 }
 
 def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.UserAnswer]):
-    """Grades a test submission and saves the results to the database."""
+    """Grades a test submission, calculates statistics, and saves everything."""
     test_paper = get_test_paper_by_id(db, test_id)
-    if not test_paper:
-        return None, []  # Or raise an exception
     questions_map = {str(q.id): q for q in test_paper.questions}
 
     grading_results = []
+    correct_objective_count = 0
+    total_objective_count = 0
+    total_essay_count = 0
+
+    # Classify all questions first
+    for question in test_paper.questions:
+        if question.question_type in GRADING_STRATEGIES:
+            total_objective_count += 1
+        elif question.question_type == 'essay':
+            total_essay_count += 1
+
+    # Grade submitted answers
     for user_answer in user_answers:
         question = questions_map.get(user_answer.question_id)
-        if not question:
-            continue  # Skip if the question ID is invalid
-        
+        if not question or question.question_type not in GRADING_STRATEGIES:
+            continue
+
         is_correct = grade_objective_question(question, user_answer)
+        if is_correct:
+            correct_objective_count += 1
+        
         grading_results.append(schemas.ObjectiveGradeResult(
-            question_id=user_answer.question_id,
+            question_id=user_answer.question_id, 
             is_correct=is_correct
         ))
 
@@ -145,6 +158,7 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
     user_answers_dicts = [ans.model_dump() for ans in user_answers]
     grading_results_dicts = [res.model_dump() for res in grading_results]
 
+    # Create and save the result
     db_result = models.TestPaperResult(
         test_paper_id=test_id,
         user_answers=user_answers_dicts,
@@ -154,17 +168,40 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
     db.add(db_result)
     db.commit()
     db.refresh(db_result)
-    
+
     return db_result, grading_results
 
 def get_all_test_results(db: Session):
-    """Fetches all test paper results, including the test paper name."""
-    return (
+    """Fetches all test paper results and calculates statistics on the fly."""
+    results = (
         db.query(models.TestPaperResult)
-        .options(joinedload(models.TestPaperResult.test_paper))
+        .options(joinedload(models.TestPaperResult.test_paper).subqueryload(models.TestPaper.questions))
         .order_by(models.TestPaperResult.created_at.desc())
         .all()
     )
+
+    # 为每条结果动态计算统计数据
+    for result in results:
+        test_paper = result.test_paper
+        if not test_paper or not test_paper.questions:
+            result.total_objective_questions = 0
+            result.total_essay_questions = 0
+            result.correct_objective_questions = 0
+            continue
+
+        # 统计题目类型数量
+        total_objective = sum(1 for q in test_paper.questions if q.question_type in GRADING_STRATEGIES)
+        total_essay = sum(1 for q in test_paper.questions if q.question_type == 'essay')
+
+        # 统计客观题正确数
+        correct_objective = sum(1 for grade in result.grading_results if isinstance(grade, dict) and grade.get('is_correct'))
+        
+        # 将统计结果附加到 result 对象上，这样 Pydantic 可以使用它们
+        result.total_objective_questions = total_objective
+        result.total_essay_questions = total_essay
+        result.correct_objective_questions = correct_objective
+
+    return results
 
 def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
     """Fetches a single test paper result by its ID, eagerly loading the test paper data."""

@@ -47,6 +47,7 @@ const TestPaperPage = () => {
   const {
     testData,
     setTestData,
+    setTestForHistory, // 使用新的 action
     userAnswers,
     setUserAnswers,
     isLoading,
@@ -89,7 +90,7 @@ const TestPaperPage = () => {
         const result = response.data;
 
         const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
-        setTestData(testPaperResponse.data);
+        setTestForHistory(testPaperResponse.data); // 改为调用 setTestForHistory
         const answers = result.user_answers;
         console.log(`User Answers:`, answers);
         const formattedAnswers = {};

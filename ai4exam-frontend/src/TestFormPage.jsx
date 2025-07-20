@@ -1,85 +1,95 @@
-// src/TestFormPage.jsx
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Upload, message, Tabs, Divider, Space, InputNumber, Tag } from 'antd';
-import { UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Input, Button, Upload, message, InputNumber, Spin, Modal } from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import useTestStore from './store/useTestStore'; // 引入Zustand store
+import useTestStore from './store/useTestStore';
+import './TestFormPage.css'; // 引入新的CSS文件
 
 const { TextArea } = Input;
-const { Dragger } = Upload;
 
-const ALL_QUESTION_TYPES = {
-  single_choice: '单选题',
-  multiple_choice: '多选题',
-  fill_in_the_blank: '填空题',
-  essay: '论述题',
+// 题型配置
+const QUESTION_TYPES_CONFIG = {
+  single_choice: { label: '单选题', default: 5 },
+  multiple_choice: { label: '多选题', default: 3 },
+  fill_in_the_blank: { label: '填空题', default: 5 },
+  essay: { label: '简答题', default: 2 },
 };
 
 const TestFormPage = () => {
-  const [form] = Form.useForm();
-  const [selectedTypes, setSelectedTypes] = useState({});
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [sourceText, setSourceText] = useState('');
+  const [fileList, setFileList] = useState([]);
+  const [questionQuantities, setQuestionQuantities] = useState({
+    single_choice: 5,
+    multiple_choice: 3,
+    fill_in_the_blank: 5,
+    essay: 2,
+  });
 
-  // 从Zustand store获取函数和状态
   const { setIsLoading, setTestData, isLoading } = useTestStore();
-  const navigate = useNavigate(); // 获取跳转函数
+  const navigate = useNavigate();
 
-  const addQuestionType = (type) => {
-    if (selectedTypes[type] !== undefined) {
-      message.info('该题型已添加！'); return;
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('api_key');
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    } else {
+      setIsModalVisible(true); // 如果没有key，则自动弹出
     }
-    setSelectedTypes(prev => ({ ...prev, [type]: 5 }));
+  }, []);
+
+  const handleOk = () => {
+    localStorage.setItem('api_key', apiKey);
+    setIsModalVisible(false);
+    message.success('API Key已保存！');
   };
 
-  const removeQuestionType = (typeToRemove) => {
-    setSelectedTypes(prev => {
-      const newTypes = { ...prev };
-      delete newTypes[typeToRemove];
-      return newTypes;
-    });
+  const handleCancel = () => {
+    setIsModalVisible(false);
   };
 
   const handleQuantityChange = (type, value) => {
-    setSelectedTypes(prev => ({ ...prev, [type]: value }));
+    setQuestionQuantities(prev => ({ ...prev, [type]: value }));
   };
 
-  // 核心：处理表单提交的函数
-  const onFinish = async (values) => {
-    if (Object.keys(selectedTypes).length === 0) {
-      message.error('请至少选择一种题型！');
+  const onFinish = async () => {
+    if (!sourceText && fileList.length === 0) {
+      message.error('请提供知识源，可以是文本或文件。');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // 1. 准备API需要的数据
-      const question_config = Object.entries(selectedTypes).map(([type, count]) => ({ type, count }));
-      const config = {
-        description: "由AI智能试卷助手生成", // 可以增加一个描述输入框
-        question_config,
-        difficulty: "medium" // 难度可以后续添加一个选项
-      };
+      const question_config = Object.entries(questionQuantities)
+        .filter(([, count]) => count > 0) // 过滤掉数量为0的题型
+        .map(([type, count]) => ({ type, count }));
 
-      const formData = new FormData();
-      // 根据用户输入，添加 source_text 或 source_file
-      if (values.source_file && values.source_file.length > 0) {
-        formData.append('source_file', values.source_file[0].originFileObj);
-      } else if (values.source_text) {
-        formData.append('source_text', values.source_text);
-      } else {
-        message.error('请提供知识源，可以是文本或文件。');
+      if (question_config.length === 0) {
+        message.error('请至少选择一种题型并设置数量大于0！');
         setIsLoading(false);
         return;
       }
 
+      const config = {
+        description: "由AI智能试卷助手生成",
+        question_config,
+        difficulty: "medium"
+      };
+
+      const formData = new FormData();
+      if (fileList.length > 0) {
+        formData.append('source_file', fileList[0].originFileObj);
+      } else {
+        formData.append('source_text', sourceText);
+      }
       formData.append('config_json', JSON.stringify(config));
 
-      // 2. 调用API
-      const apiKey = localStorage.getItem('api_key');
       if (!apiKey) {
-        message.error('请先在右上角设置中填写您的API Key！');
+        message.error('请先在设置中填写您的API Key！');
+        setIsModalVisible(true);
         setIsLoading(false);
         return;
       }
@@ -91,78 +101,122 @@ const TestFormPage = () => {
         }
       });
 
-      // 3. 将返回的数据存入全局状态
       setTestData(response.data);
       message.success('试卷生成成功！正在跳转...');
 
-      // 4. 跳转到试卷页面
-      const testId = response.data.test_id;
-      navigate(`/testpaper/${testId}`);
+      navigate(`/testpaper/${response.data.test_id}`);
 
     } catch (error) {
       console.error("API Error:", error);
-      message.error('生成试卷失败，请检查API Key或联系管理员。');
+      message.error(error.response?.data?.detail || '生成试卷失败，请检查API Key或联系管理员。');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ... (组件的其余部分保持不变, 为了简洁省略)
-  // ... (确保你复制的是下面的完整返回部分)
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+    if (newFileList.length > 0) {
+      setSourceText(''); // 如果上传了文件，清空文本输入
+    }
+  };
+
+  const handleTextChange = (e) => {
+    setSourceText(e.target.value);
+    if (e.target.value) {
+      setFileList([]); // 如果输入了文本，清空文件列表
+    }
+  }
+
   return (
-    <Form form={form} layout="vertical" onFinish={onFinish}>
-      <Divider orientation="left">1. 提供知识源</Divider>
-      <Tabs defaultActiveKey="1">
-        <Tabs.TabPane tab="粘贴文本" key="1">
-          <Form.Item name="source_text">
-            <TextArea rows={10} placeholder="请在此处粘贴你需要出题的文本内容..." />
-          </Form.Item>
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="上传文件" key="2">
-          <Form.Item name="source_file" valuePropName="fileList" getValueFromEvent={(e) => e && e.fileList}>
-            <Dragger beforeUpload={() => false} maxCount={1}>
-              <p className="ant-upload-drag-icon"><UploadOutlined /></p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-              <p className="ant-upload-hint">支持 .pdf, .txt, .md 等文件格式。</p>
-            </Dragger>
-          </Form.Item>
-        </Tabs.TabPane>
-      </Tabs>
+    <div className="container" style={{ margin: '0 auto' }}>
+      <header>
+        <h1>AI 试卷助手</h1>
+        <p>输入知识，静待佳题</p>
+      </header>
 
-      <Divider orientation="left">2. 选择并配置题型</Divider>
-      <Form.Item label="点击添加你需要的题型:">
-        <Space wrap>
-          {Object.keys(ALL_QUESTION_TYPES).map(typeKey => (
-            <Button key={typeKey} onClick={() => addQuestionType(typeKey)}>
-              {ALL_QUESTION_TYPES[typeKey]}
+      <main className="main-card">
+        <Spin spinning={isLoading} tip="正在生成中，请稍候..." size="large">
+          {/* 知识源 */}
+          <section className="section">
+            <h2 className="section-title">知识源</h2>
+            <div className="knowledge-source">
+              <TextArea
+                value={sourceText}
+                onChange={handleTextChange}
+                placeholder="在此处粘贴文本、教学大纲或相关知识点..."
+                rows={6}
+              />
+              <p>或
+                <Upload
+                  fileList={fileList}
+                  onChange={handleFileChange}
+                  beforeUpload={() => false} // 不自动上传
+                  maxCount={1}
+                  showUploadList={false}
+                >
+                  <a href="#" style={{ color: 'var(--accent-color)', textDecoration: 'none' }}> 上传文件 </a>
+                </Upload>
+                 (PDF, DOCX, TXT)
+              </p>
+              {fileList.length > 0 && (
+                <div>已选择文件：{fileList[0].name}</div>
+              )}
+            </div>
+          </section>
+
+          {/* 题型设置 */}
+          <section className="section">
+            <h2 className="section-title">题型设置</h2>
+            <div className="question-selection">
+              {Object.entries(QUESTION_TYPES_CONFIG).map(([type, { label }]) => (
+                <div className="question-type" key={type}>
+                  <label htmlFor={type}>{label}</label>
+                  <InputNumber
+                    id={type}
+                    className="quantity-input"
+                    min={0}
+                    value={questionQuantities[type]}
+                    onChange={(value) => handleQuantityChange(type, value)}
+                    aria-label={`${label}数量`}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 生成按钮 */}
+          <section className="action-bar">
+            <Button className="generate-btn" onClick={onFinish} disabled={isLoading}>
+              一键生成
             </Button>
-          ))}
-        </Space>
-      </Form.Item>
+          </section>
+        </Spin>
+      </main>
 
-      {Object.keys(selectedTypes).length > 0 && (
-        <Form.Item label="设置题目数量:">
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {Object.entries(selectedTypes).map(([type, count]) => (
-              <Space key={type}>
-                <Tag color="blue" style={{ width: '80px', textAlign: 'center' }}>{ALL_QUESTION_TYPES[type]}</Tag>
-                <InputNumber min={1} max={20} value={count} onChange={(value) => handleQuantityChange(type, value)} />
-                <span>道</span>
-                <Button type="text" icon={<CloseCircleOutlined />} onClick={() => removeQuestionType(type)} danger />
-              </Space>
-            ))}
-          </Space>
-        </Form.Item>
-      )}
+      <Link to="/history" className="history-link">查看历史试卷 →</Link>
 
-      <Divider />
+      <Button
+        className="settings-btn"
+        icon={<SettingOutlined />}
+        onClick={() => setIsModalVisible(true)}
+      />
 
-      <Form.Item>
-        <Button type="primary" htmlType="submit" size="large" loading={isLoading}>
-          {isLoading ? '正在生成中...' : '开始智能生成试卷'}
-        </Button>
-      </Form.Item>
-    </Form>
+      <Modal
+        title="设置API Key"
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Input
+          placeholder="请输入您的API Key"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+        />
+      </Modal>
+    </div>
   );
 };
 

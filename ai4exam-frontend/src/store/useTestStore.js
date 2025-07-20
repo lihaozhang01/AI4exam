@@ -19,6 +19,7 @@ const useTestStore = create((set) => ({
     overallFeedback: null,
     singleQuestionFeedbacks: {},
   }),
+  setTestForHistory: (data) => set({ testData: data }), // 新增：专为历史记录设置试卷数据，不重置其他状态
   setIsLoading: (loading) => set({ isLoading: loading }),
 
   updateUserAnswer: (questionId, answer) => {

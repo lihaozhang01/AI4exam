@@ -1,0 +1,194 @@
+:root {
+  --primary-text: #333;
+  /* 主文本颜色，深灰而非纯黑，更柔和 */
+  --secondary-text: #666;
+  /* 次要文本颜色 */
+  --background: #fdfdfc;
+  /* 背景色，略带暖意的米白，避免刺眼 */
+  --accent-color: #8ab0ab;
+  /* 主题色，低饱和度的青绿，宁静致远 */
+  --accent-hover: #709a94;
+  /* 主题悬停色 */
+  --border-color: #e0e0e0;
+  /* 边框颜色 */
+  --card-bg: #ffffff;
+  /* 卡片背景色 */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* 统一的阴影效果 */
+  --font-family: 'Noto Sans TC', sans-serif;
+  /* 优先使用思源黑体 */
+}
+  
+  body,
+  html {
+    background-color: var(--background);
+  }
+  
+  .history-container {
+    width: 100%;
+    max-width: 1400px; /* 扩展内容区域宽度 */
+    margin: 0 auto;
+    padding: 1rem 2rem; /* 减小顶部内边距 */
+    font-family: var(--font-family);
+    position: relative; /* 为返回按钮定位 */
+  }
+  
+  .history-header {
+    text-align: center;
+    margin-top: 1rem; /* 减少底部边距，使标题更靠上 */
+  }
+  
+  .history-header h1 {
+    font-size: 2rem; /* 缩小标题字体大小 */
+    font-weight: 500;
+    color: var(--primary-text);
+    letter-spacing: 2px; /* 调整字间距 */
+    margin: 0;
+  }
+  
+  .history-header p {
+    font-size: 1rem; /* 缩小副标题字体大小 */
+    color: var(--secondary-text);
+    margin-top: 0.5rem;
+  }
+  
+  .history-grid {
+    display: grid;
+    /* 调整卡片最小宽度，使其在更大屏幕上显示更宽 */
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+  }
+  
+  .history-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 220px;
+  }
+  
+  .history-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .card-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-text);
+    margin: 0 0 0.5rem 0;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .card-header h2:hover {
+    color: var(--accent-color);
+  }
+  
+  .card-date {
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+    margin-bottom: 1.5rem;
+  }
+  
+  .card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .stat {
+    text-align: center;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-color);
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+  }
+  
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    margin-top: auto;
+  }
+  
+  .history-back-link {
+    position: absolute;
+    top: 1.5rem;
+    left: 2rem;
+    font-size: 0.95rem;
+    color: var(--secondary-text); /* 默认灰色 */
+    text-decoration: none;
+    transition: color 0.3s ease;
+    padding: 0.5rem 0; /* 移除水平内边距 */
+    border: none; /* 取消边框 */
+    background: none; /* 取消背景 */
+  }
+  
+  .history-back-link:hover {
+    color: var(--accent-color); /* 悬停时变为主题色 */
+  }
+  
+  .ant-btn.ant-btn-link.ant-btn-dangerous {
+    color: #a96363 !important;
+  }
+  
+  .ant-btn.ant-btn-link.ant-btn-dangerous:hover {
+    color: #8c4a4a !important;
+  }
+  
+  .no-history-container {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+  }
+  
+  .no-history-container h2 {
+    font-size: 1.5rem;
+    color: var(--primary-text);
+  }
+  
+  .no-history-container p {
+    color: var(--secondary-text);
+    margin-bottom: 2rem;
+  }
+
+.go-to-generate-btn {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 0.8rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(138, 176, 171, 0.4);
+  text-decoration: none; /* 移除 Link 组件的下划线 */
+  display: inline-block; /* 让 Link 组件表现得像按钮 */
+}
+
+.go-to-generate-btn:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-2px);
+  color: white;
+}

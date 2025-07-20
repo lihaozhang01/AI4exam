@@ -109,5 +109,10 @@ class TestPaperResultSchema(BaseModel):
     created_at: datetime.datetime
     test_paper: TestPaperSchema # 嵌套的TestPaper信息
 
+    # 新增的统计字段
+    correct_objective_questions: int = 0
+    total_objective_questions: int = 0
+    total_essay_questions: int = 0
+
     class Config:
         orm_mode = True
