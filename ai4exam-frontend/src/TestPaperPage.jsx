@@ -1,7 +1,7 @@
 // src/TestPaperPage.jsx
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { Empty, Button, Divider, message, Checkbox, Alert, Spin, Space } from 'antd';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
@@ -10,6 +10,7 @@ import SingleChoiceQuestion from './components/SingleChoiceQuestion';
 import MultipleChoiceQuestion from './components/MultipleChoiceQuestion';
 import FillInTheBlankQuestion from './components/FillInTheBlankQuestion';
 import EssayQuestion from './components/EssayQuestion';
+import './TestPaperPage.css';
 
 // Helper function to build the payload for API calls
 const buildAnswersPayload = (userAnswers, questions) => {
@@ -29,7 +30,6 @@ const buildAnswersPayload = (userAnswers, questions) => {
         return { ...basePayload, answer_indices: answer || [] };
       case 'fill_in_the_blank':
         // 如果答案是单个字符串（由$$$拼接），则拆分为数组
-        
         const answers = typeof answer === 'string' ? answer.split('$$$') : (answer || []);
         return { ...basePayload, answer_texts: answers };
       case 'essay':
@@ -256,86 +256,108 @@ const TestPaperPage = () => {
   };
 
 
-  // ... (组件的其余部分保持不变)
+
+  const renderContent = () => (
+    !testData || !testData.questions ? null :
+      <>
+        {overallFeedback && (
+          <Alert
+            message="AI 总结与点评"
+            description={overallFeedback}
+            type="info"
+            showIcon
+            style={{ marginBottom: '24px' }}
+            closable
+            onClose={() => setOverallFeedback(null)} // 允许用户关闭
+          />
+        )}
+        {testData.questions.map((question, index) => (
+          <div key={question.id}>
+            {(() => {
+              const result = gradingResults?.find(r => r.question_id === question.id);
+              switch (question.type) {
+                case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
+                case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
+                case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
+                case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />; // 确保传递了 gradingResult
+                default: return <p>未知题型</p>;
+              }
+            })()}
+            {submissionStatus === 'submitted_and_showing_answers' && (
+              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9f9f9', borderTop: '1px solid #eee' }}>
+                <Button onClick={() => handleRequestSingleQuestionFeedback(question.id)}>
+                  请求 AI 点评此题
+                </Button>
+                {singleQuestionFeedbacks[question.id] && (
+                  <Alert
+                    message="AI 点评"
+                    description={singleQuestionFeedbacks[question.id]}
+                    type="info"
+                    showIcon
+                    style={{ marginTop: '16px' }}
+                    closable
+                    onClose={() => setSingleQuestionFeedback(question.id, null)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        <Divider />
+      </>
+  );
+
   if (isLoading) {
-    return <div style={{ textAlign: 'center', marginTop: '50px' }}><Spin size="large" tip="加载中..." /></div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
   }
 
-  if (!testData || !testData.questions) {
-    return (<Empty description="尚未生成试卷..."><Button onClick={() => navigate('/')}>返回出题</Button></Empty>);
-  }
+
+
+  // 在确认 testData 存在后再解构
+  const { name, description, questions } = testData || {};
 
   return (
-    <div>
-
-      <h1 style={{ textAlign: 'center', marginBottom: '24px' }}>AI 智能模拟试卷</h1>
-      {overallFeedback && (
-        <Alert
-          message="AI 总结与点评"
-          description={overallFeedback}
-          type="info"
-          showIcon
-          style={{ marginBottom: '24px' }}
-          closable
-          onClose={() => setOverallFeedback(null)} // 允许用户关闭
-        />
-      )}
-      {testData.questions.map((question, index) => (
-        <div key={question.id}>
-          {(() => {
-            const result = gradingResults?.find(r => r.question_id === question.id);
-            switch (question.type) {
-              case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
-              case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
-              case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
-              case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />; // 确保传递了 gradingResult
-
-              default: return <p>未知题型</p>;
-            }
-          })()}
+    <div className="test-paper-container">
+      <div className="test-paper-header">
+        <div> {/* 左侧空 div，用于对齐 */} </div>
+        <div style={{ textAlign: 'center' }}>
+          <h1>{name}</h1>
+          <p>{description}</p>
+        </div>
+        <div className="test-paper-header-nav-side">
+          <Link to="/test-form" className="paper-to-generator">新建试卷</Link>
+          <Link to="/history" className="paper-to-history">历史试卷</Link>
+        </div>
+      </div>
+      <div className="scrollable-content">
+        <Divider />
+        {renderContent()}
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          {submissionStatus === 'in_progress' && (
+            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}>
+              提交并查看答案
+            </Button>
+          )}
           {submissionStatus === 'submitted_and_showing_answers' && (
-            <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9f9f9', borderTop: '1px solid #eee' }}>
-              <Button onClick={() => handleRequestSingleQuestionFeedback(question.id)}>
-                请求 AI 点评此题
+            <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
+              <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}>
+                {isLoading ? '正在请求AI分析...' : '请求AI进行分析'}
               </Button>
-              {singleQuestionFeedbacks[question.id] && (
-                <Alert
-                  message="AI 点评"
-                  description={singleQuestionFeedbacks[question.id]}
-                  type="info"
-                  showIcon
-                  style={{ marginTop: '16px' }}
-                  closable
-                  onClose={() => setSingleQuestionFeedback(question.id, null)}
-                />
-              )}
-            </div>
+              <Button size="large" onClick={handleRetakeTest}>
+                重新作答
+              </Button>
+            </Space>
+          )}
+          {submissionStatus === 'submitted_and_showing_answers' && gradingResults && (
+            <p style={{ marginTop: '16px', color: '#888' }}>分析完成后，你还可以针对单个题目请求AI进行更详细的点评。</p>
           )}
         </div>
-      ))}
-      <Divider />
-      <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        {submissionStatus === 'in_progress' && (
-          <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}>
-            提交并查看答案
-          </Button>
-        )}
-        {submissionStatus === 'submitted_and_showing_answers' && (
-          <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
-            <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}>
-              {isLoading ? '正在请求AI分析...' : '请求AI进行分析'}
-            </Button>
-            <Button size="large" onClick={handleRetakeTest}>
-              重新作答
-            </Button>
-          </Space>
-        )}
-        {submissionStatus === 'submitted_and_showing_answers' && gradingResults && (
-          <p style={{ marginTop: '16px', color: '#888' }}>分析完成后，你还可以针对单个题目请求AI进行更详细的点评。</p>
-        )}
       </div>
     </div>
   );
 };
-
 export default TestPaperPage;

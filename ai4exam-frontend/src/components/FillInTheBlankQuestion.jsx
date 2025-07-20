@@ -45,7 +45,7 @@ const FillInTheBlankQuestion = ({ question, index, gradingResult }) => {
           style={{ marginTop: '15px' }}
           type={gradingResult.is_correct ? 'success' : 'error'}
           message={`你的答案: ${currentAnswers.length > 0 && currentAnswers.some(ans => ans) ? currentAnswers.join(', ') : '未作答'} | 参考答案: ${question.answer.texts.join(' / ')}`}
-          description={!gradingResult.is_correct ? `解析：${question.answer.explanation}` : null}
+          description={question.answer.explanation ? `解析：${question.answer.explanation}` : null}
         />
       )}
     </Card>

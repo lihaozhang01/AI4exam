@@ -64,6 +64,16 @@ header p {
   margin-top: 0.5rem;
 }
 
+.upload-section {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px; /* 间距 */
+  font-size: 0.9rem;
+  color: var(--secondary-text);
+  margin-top: 0.5rem;
+}
+
 /* --- 主卡片样式 --- */
 .main-card {
   background-color: var(--card-bg);

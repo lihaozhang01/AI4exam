@@ -16,7 +16,7 @@ function App() {
       <Routes>
         <Route path="/" element={<TestFormPage />} />
         <Route path="/history" element={<HistoryPage />} />
-         <Route path="/testpaper/:testId" element={<TestPaperPage />} />
+        <Route path="/testpaper/:testId" element={<TestPaperPage />} />
         <Route path="/history/:resultId" element={<TestPaperPage />} />
       </Routes>
     </div>

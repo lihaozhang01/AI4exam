@@ -17,7 +17,7 @@ const QUESTION_TYPES_CONFIG = {
 };
 
 const TestFormPage = () => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [sourceText, setSourceText] = useState('');
   const [fileList, setFileList] = useState([]);
@@ -36,13 +36,13 @@ const TestFormPage = () => {
     if (storedApiKey) {
       setApiKey(storedApiKey);
     } else {
-      setIsModalVisible(true); // 如果没有key，则自动弹出
+      setIsModalOpen(true); // 如果没有key，则自动弹出
     }
   }, []);
 
   const handleOk = () => {
     localStorage.setItem('api_key', apiKey);
-    setIsModalVisible(false);
+    setIsModalOpen(false);
     message.success('API Key已保存！');
   };
 
@@ -89,7 +89,7 @@ const TestFormPage = () => {
 
       if (!apiKey) {
         message.error('请先在设置中填写您的API Key！');
-        setIsModalVisible(true);
+        setIsModalOpen(true);
         setIsLoading(false);
         return;
       }
@@ -147,7 +147,8 @@ const TestFormPage = () => {
                 placeholder="在此处粘贴文本、教学大纲或相关知识点..."
                 rows={6}
               />
-              <p>或
+              <div className="upload-section">
+                <span>或</span>
                 <Upload
                   fileList={fileList}
                   onChange={handleFileChange}
@@ -157,8 +158,8 @@ const TestFormPage = () => {
                 >
                   <a href="#" style={{ color: 'var(--accent-color)', textDecoration: 'none' }}> 上传文件 </a>
                 </Upload>
-                 (PDF, DOCX, TXT)
-              </p>
+                <span>(PDF, DOCX, TXT)</span>
+              </div>
               {fileList.length > 0 && (
                 <div>已选择文件：{fileList[0].name}</div>
               )}
@@ -199,14 +200,14 @@ const TestFormPage = () => {
       <Button
         className="settings-btn"
         icon={<SettingOutlined />}
-        onClick={() => setIsModalVisible(true)}
+        onClick={() => setIsModalOpen(true)}
       />
 
       <Modal
         title="设置API Key"
-        visible={isModalVisible}
+        open={isModalOpen}
         onOk={handleOk}
-        onCancel={handleCancel}
+        onCancel={() => setIsModalOpen(false)}
         okText="保存"
         cancelText="取消"
       >

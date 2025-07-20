@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, Radio, Space, Alert, Tag } from 'antd';
+import './SingleChoiceQuestion.css'; // 引入样式文件
 import useTestStore from '../store/useTestStore';
 
 const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
@@ -7,15 +8,20 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
 
   return (
     <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 单选题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
-      <Radio.Group
-        onChange={(e) => updateUserAnswer(question.id, e.target.value)}
-        value={userAnswers[question.id]}
-        disabled={!!gradingResult} // 如果有结果，则禁用
-      >
-        <Space direction="vertical">
-          {question.options.map((option, i) => <Radio key={i} value={i}>{String.fromCharCode(65 + i)}. {option}</Radio>)}
-        </Space>
-      </Radio.Group>
+
+      <Space direction="vertical" style={{ width: '100%' }}>
+        {question.options.map((option, i) => (
+          <div
+            key={i}
+            className={`choice-option ${userAnswers[question.id] === i ? 'selected' : ''}`}
+            onClick={() => !gradingResult && updateUserAnswer(question.id, i)}
+          >
+            <Radio value={i} checked={userAnswers[question.id] === i} disabled={!!gradingResult} />
+            <div className="choice-option-text">{String.fromCharCode(65 + i)}. {option}</div>
+          </div>
+        ))}
+      </Space>
+
       {gradingResult && (
         <Alert
           style={{ marginTop: '15px' }}
@@ -28,7 +34,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
               ) : (
                 <Tag color="error">回答错误</Tag>
               )}
-              {!gradingResult.is_correct && <div>解析：{question.answer.explanation}</div>}
+              {question.answer.explanation && <div>解析：{question.answer.explanation}</div>}
             </div>
           }
         />

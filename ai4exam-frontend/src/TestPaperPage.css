@@ -1,0 +1,102 @@
+:root {
+  --primary-text: #333;
+  --secondary-text: #666;
+  --background: #fdfdfc;
+  --accent-color: #8ab0ab;
+  --accent-hover: #709a94;
+  --border-color: #e0
+}
+
+.test-paper-container {
+  width: 100%;
+  /* max-width: 900px; */
+  /* 移除最大宽度限制 */
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  font-family: var(--font-family);
+  background-color: var(--background);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.test-paper-header-nav-side {
+  display: flex;
+  gap: 12px;
+}
+
+.paper-to-generator {
+  position: absolute;
+  top: 1.5rem;
+  left: 2rem;
+  font-size: 0.95rem;
+  color: var(--secondary-text);
+  /* 默认灰色 */
+  text-decoration: none;
+  transition: color 0.3s ease;
+  padding: 0.5rem 0;
+  /* 移除水平内边距 */
+  border: none;
+  /* 取消边框 */
+  background: none;
+  /* 取消背景 */
+}
+
+.paper-to-generator:hover {
+  color: var(--accent-color);
+  /* 悬停时变为主题色 */
+}
+
+/* --- 历史记录链接 --- */
+.paper-to-history {
+  position: absolute;
+  top: 2.5rem;
+  right: 2.5rem;
+  color: var(--secondary-text);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+
+.paper-to-history:hover {
+  color: var(--accent-color);
+}
+
+.scrollable-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow: var(--shadow);
+  max-width: 900px;
+  /* 将最大宽度限制移到这里 */
+  width: 100%;
+  margin: 0 auto;
+  /* 让内容区居中 */
+}
+
+.test-paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding: 0 2.5rem;
+}
+
+.test-paper-header h1 {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--primary-text);
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+}
+
+.test-paper-header p {
+  font-size: 1rem;
+  color: var(--secondary-text);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
