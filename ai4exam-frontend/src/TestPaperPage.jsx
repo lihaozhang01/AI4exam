@@ -29,6 +29,7 @@ const buildAnswersPayload = (userAnswers, questions) => {
         return { ...basePayload, answer_indices: answer || [] };
       case 'fill_in_the_blank':
         // 如果答案是单个字符串（由$$$拼接），则拆分为数组
+        
         const answers = typeof answer === 'string' ? answer.split('$$$') : (answer || []);
         return { ...basePayload, answer_texts: answers };
       case 'essay':
@@ -89,28 +90,26 @@ const TestPaperPage = () => {
 
         const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
         setTestData(testPaperResponse.data);
-
         const answers = result.user_answers;
+        console.log(`User Answers:`, answers);
         const formattedAnswers = {};
         answers.forEach(ans => {
           let finalAnswer;
-          switch (ans.question_type) {
-            case 'single_choice':
-              finalAnswer = ans.answer_index;
-              break;
-            case 'multiple_choice':
-              finalAnswer = ans.answer_indices;
-              break;
-            case 'fill_in_the_blank':
-              finalAnswer = ans.answer_texts.join('$$$');
-              break;
-            case 'essay':
-              finalAnswer = ans.answer_text;
-              break;
-            default:
-              finalAnswer = null;
+          if (ans.answer_index !== null && ans.answer_index !== undefined) {
+            finalAnswer = ans.answer_index;
+          } else if (ans.answer_indices) {
+            finalAnswer = ans.answer_indices;
+          } else if (ans.answer_texts) {
+            finalAnswer = ans.answer_texts;
+          } else if (ans.answer_text) {
+            finalAnswer = ans.answer_text;
+          } else {
+            finalAnswer = null;
           }
-          formattedAnswers[ans.question_id] = finalAnswer;
+
+          if (finalAnswer !== null) {
+            formattedAnswers[ans.question_id] = finalAnswer;
+          }
         });
         setUserAnswers(formattedAnswers);
 
@@ -148,7 +147,7 @@ const TestPaperPage = () => {
       }
 
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
-
+      console.log(`Answer Texts:`, allAnswers[0].answer_texts);
       const apiKey = localStorage.getItem('api_key');
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');

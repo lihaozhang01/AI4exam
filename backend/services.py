@@ -76,40 +76,86 @@ def get_question_by_id(db: Session, question_id: int) -> models.DBQuestion:
 # --- Objective Question Grading Logic (Strategy Pattern) ---
 
 def _grade_single_choice(user_answer: schemas.UserAnswer, correct_answer: Dict) -> bool:
+    print(f"--- Grading Single Choice Question ID: {user_answer.question_id} ---")
+    print(f"Received UserAnswer object: {user_answer}")
+    print(f"Correct answer: {correct_answer}")
+    
     return user_answer.answer_index is not None and user_answer.answer_index == correct_answer.get('index')
 
 def _grade_multiple_choice(user_answer: schemas.UserAnswer, correct_answer: Dict) -> bool:
     return set(user_answer.answer_indices or []) == set(correct_answer.get('indexes', []))
 
-def _grade_fill_in_blank(user_answer: schemas.UserAnswer, correct_answer: Dict) -> bool:
-    # The frontend joins answers with '$$$', so we need to split them here.
-    user_texts = user_answer.answer.split('$$$') if isinstance(user_answer.answer, str) else []
-    correct_texts = correct_answer.get('texts', [])
+def _grade_fill_in_blank(user_answer: schemas.UserAnswer, correct_answer: Any) -> bool:
+    """Grades a fill-in-the-blank question.
     
-    # Strip whitespace from both user's answers and correct answers.
-    user_texts_stripped = [text.strip() for text in user_texts]
-    correct_texts_stripped = [text.strip() for text in correct_texts]
+    Handles cases where correct_answer could be a dict {'texts': [...]} or a direct list [...].
+    """
+    user_texts = user_answer.answer_texts or []
     
-    return user_texts_stripped == correct_texts_stripped
+    
+    # Standardize correct_texts from various possible formats
+    if isinstance(correct_answer, dict):
+        correct_texts = correct_answer.get('texts', [])
+    elif isinstance(correct_answer, list):
+        correct_texts = correct_answer
+    else:
+        correct_texts = []
+
+    # If there are no correct answers defined, the user's answer is correct only if they submitted nothing.
+    if not correct_texts:
+        return not any(user_texts)
+
+    # Pad the user's answers with empty strings to match the length of correct answers
+    standardized_user_texts = (user_texts + [''] * len(correct_texts))[:len(correct_texts)]
+
+    # Compare each blank
+    for user_text, correct_text in zip(standardized_user_texts, correct_texts):
+        if user_text.strip() != str(correct_text).strip():
+            return False
+
+    return True
     # 使用列表比较，确保
 
 GRADING_STRATEGIES: Dict[str, Callable[[schemas.UserAnswer, Dict], bool]] = {
     'single_choice': _grade_single_choice,
     'multiple_choice': _grade_multiple_choice,
-    'fill_in_blank': _grade_fill_in_blank,
+    'fill_in_the_blank': _grade_fill_in_blank,
 }
 
-def save_test_result(db: Session, test_id: int, user_answers: List[schemas.UserAnswer], grading_results: List[schemas.ObjectiveGradeResult]):
-    """Saves the results of a completed test paper to the database."""
+def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.UserAnswer]):
+    """Grades a test submission and saves the results to the database."""
+    test_paper = get_test_paper_by_id(db, test_id)
+    if not test_paper:
+        return None, []  # Or raise an exception
+    questions_map = {str(q.id): q for q in test_paper.questions}
+
+    grading_results = []
+    for user_answer in user_answers:
+        question = questions_map.get(user_answer.question_id)
+        if not question:
+            continue  # Skip if the question ID is invalid
+        
+        is_correct = grade_objective_question(question, user_answer)
+        grading_results.append(schemas.ObjectiveGradeResult(
+            question_id=user_answer.question_id,
+            is_correct=is_correct
+        ))
+
+    # Convert Pydantic models to dictionaries for JSON serialization
+    user_answers_dicts = [ans.model_dump() for ans in user_answers]
+    grading_results_dicts = [res.model_dump() for res in grading_results]
+
     db_result = models.TestPaperResult(
         test_paper_id=test_id,
-        user_answers=[ans.model_dump() for ans in user_answers],
-        grading_results=[res.model_dump() for res in grading_results]
+        user_answers=user_answers_dicts,
+        grading_results=grading_results_dicts
     )
+
     db.add(db_result)
     db.commit()
     db.refresh(db_result)
-    return db_result
+    
+    return db_result, grading_results
 
 def get_all_test_results(db: Session):
     """Fetches all test paper results, including the test paper name."""
@@ -133,17 +179,32 @@ def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
     return result
 
 def delete_test_result(db: Session, result_id: int) -> bool:
-    """Deletes a test result from the database by its ID."""
+    """Deletes a test result, and the test paper if it's the last result."""
     result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
-    if result:
-        db.delete(result)
-        db.commit()
-        return True
-    return False
+    if not result:
+        return False
+
+    test_paper_id = result.test_paper_id
+    db.delete(result)
+    db.commit()
+
+    # Check if there are any remaining results for this test paper
+    remaining_results_count = db.query(models.TestPaperResult).filter(models.TestPaperResult.test_paper_id == test_paper_id).count()
+
+    if remaining_results_count == 0:
+        # If no results are left, delete the test paper itself
+        test_paper = db.query(models.TestPaper).filter(models.TestPaper.id == test_paper_id).first()
+        if test_paper:
+            db.delete(test_paper)
+            db.commit()
+            
+    return True
 
 
 def grade_objective_question(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> bool:
     """根据题型分发并批改单个客观题。"""
+
+
     grading_func = GRADING_STRATEGIES.get(question.question_type)
     if not grading_func:
         return False

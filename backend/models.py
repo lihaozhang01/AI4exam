@@ -11,7 +11,8 @@ class TestPaper(Base):
     source_type = Column(String(50))
     source_content = Column(Text)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    questions = relationship('DBQuestion', back_populates='test_paper') # 已修正
+    questions = relationship('DBQuestion', back_populates='test_paper', cascade="all, delete-orphan")
+    results = relationship('TestPaperResult', back_populates='test_paper', cascade="all, delete-orphan")
 
 class TestPaperResult(Base):
     __tablename__ = 'test_paper_results'
@@ -20,7 +21,7 @@ class TestPaperResult(Base):
     user_answers = Column(JSON) # Store user's answers
     grading_results = Column(JSON) # Store grading results
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    test_paper = relationship('TestPaper')
+    test_paper = relationship('TestPaper', back_populates='results')
 
 
 class DBQuestion(Base):

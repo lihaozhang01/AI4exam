@@ -97,19 +97,16 @@ async def get_test(test_id: int, db: Session = Depends(get_db)):
 
 @app.post("/grade-questions", response_model=schemas.GradeQuestionsResponse)
 async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = Depends(get_db)):
-    test_paper = services.get_test_paper_by_id(db, int(request.test_id))
-    questions_map = {str(q.id): q for q in test_paper.questions}
+    # 调用新的服务函数，该函数会处理评分和保存的整个流程
     
-    results = [
-        schemas.ObjectiveGradeResult(
-            question_id=user_answer.question_id,
-            is_correct=services.grade_objective_question(questions_map[user_answer.question_id], user_answer)
-        )
-        for user_answer in request.answers if user_answer.question_id in questions_map
-    ]
-    services.save_test_result(db, int(request.test_id), request.answers, results)
+    db_result, grading_results = services.grade_and_save_test(
+        db=db,
+        test_id=int(request.test_id),
+        user_answers=request.answers
+    )
 
-    return schemas.GradeQuestionsResponse(results=results)
+    # API直接返回后端生成的评分结果
+    return schemas.GradeQuestionsResponse(results=grading_results)
 
 
 @app.post("/generate-overall-feedback", response_model=schemas.GenerateOverallFeedbackResponse)

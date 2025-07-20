@@ -20,13 +20,13 @@ GENERATE_TEST_PROMPT = """
     {{
       "id": "<string>",
       "type": "<string: 'single_choice'|'multiple_choice'|'fill_in_the_blank'|'essay'>",
-      "stem": "<string>",
+      "stem": "<string>", // 对于填空题，请使用'$blank$'作为占位符，例如：'光合作用的主要场所是$blank$'
       "options": "<list[string]>",
       "answer": {{
         // 根据type不同，结构也不同
         // single_choice: {{ "index": <integer>, "explanation": "<string>" }}
         // multiple_choice: {{ "indexes": <list[integer]>, "explanation": "<string>" }}
-        // fill_in_the_blank: {{ "texts": <list[string]>, "explanation": "<string>" }}
+        // fill_in_the_blank: {{ "texts": <list[string]>, "explanation": "<string>" }} (例如, stem为 'A is $blank$ and B is $blank$'时, texts应为 ['answer1', 'answer2'])
         // essay: {{ "reference_explanation": "<string>" }}
       }}
     }}
