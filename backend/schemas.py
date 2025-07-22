@@ -63,6 +63,7 @@ class GradeQuestionsResponse(BaseModel):
 
 # --- Feedback Models ---
 class GenerateOverallFeedbackRequest(BaseModel):
+    result_id: int
     test_id: str
     answers: List[UserAnswer]
 
@@ -70,6 +71,7 @@ class GenerateOverallFeedbackResponse(BaseModel):
     feedback: str
 
 class GenerateSingleQuestionFeedbackRequest(BaseModel):
+    result_id: int
     question_id: str
     user_answer: Optional[UserAnswer] = None
 
@@ -107,6 +109,8 @@ class TestPaperResultSchema(BaseModel):
     test_paper_id: int
     user_answers: List[Any]
     grading_results: List[Any]
+    overall_feedback: Optional[str] = None
+    question_feedbacks: Optional[Dict[str, str]] = None
     created_at: datetime.datetime
     test_paper: TestPaperSchema # 嵌套的TestPaper信息
 

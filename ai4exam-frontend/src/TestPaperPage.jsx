@@ -54,6 +54,7 @@ const TestPaperPage = () => {
     isLoading,
     setIsLoading,
     setGradingResults,
+    resultId: storeResultId, // Rename to avoid conflict with useParams resultId
     gradingResults,
     overallFeedback,
     setOverallFeedback,
@@ -93,7 +94,6 @@ const TestPaperPage = () => {
         const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
         setTestForHistory(testPaperResponse.data); // 改为调用 setTestForHistory
         const answers = result.user_answers;
-        console.log(`User Answers:`, answers);
         const formattedAnswers = {};
         answers.forEach(ans => {
           let finalAnswer;
@@ -114,7 +114,18 @@ const TestPaperPage = () => {
           }
         });
         setUserAnswers(formattedAnswers);
-        setGradingResults(result.grading_results);
+        setGradingResults(result.grading_results, id); // Also set resultId in store
+
+        // Restore AI feedback if available
+        if (result.overall_feedback) {
+          setOverallFeedback(result.overall_feedback);
+        }
+        if (result.question_feedbacks) {
+          Object.entries(result.question_feedbacks).forEach(([qId, feedback]) => {
+            setSingleQuestionFeedback(qId, feedback);
+          });
+        }
+
         setSubmissionStatus('submitted_and_showing_answers');
         setOriginalTestId(result.test_paper_id);
 
@@ -162,8 +173,11 @@ const TestPaperPage = () => {
         }
       });
 
-      setGradingResults(response.data.results);
+      setGradingResults(response.data.results, response.data.result_id);
       setSubmissionStatus('submitted_and_showing_answers');
+      // After submission, navigate to the result page to reflect the URL change
+      // This makes the resultId from useParams available and consistent
+      navigate(`/testpaper/${testData.test_id}/result/${response.data.result_id}`, { replace: true });
       message.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
     } catch (error) {
       console.error("Error submitting answers:", error.response ? error.response.data : error.message);
@@ -197,7 +211,15 @@ const TestPaperPage = () => {
         return;
       }
 
+      const currentResultId = storeResultId || resultId;
+      if (!currentResultId) {
+        message.error("无法获取到试卷结果ID，请先提交答案。");
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', {
+        result_id: parseInt(currentResultId, 10),
         test_id: testData.test_id,
         answers: answersToSend,
       }, {
@@ -251,9 +273,14 @@ const TestPaperPage = () => {
           return;
       }
 
-      console.log("Sending payload for single question feedback:", { question_id: question.id, user_answer: userAnswerPayload });
+      const currentResultId = storeResultId || resultId;
+      if (!currentResultId) {
+        message.error("无法获取到试卷结果ID，请先提交答案。");
+        return; // No loading state to change here, it's a quick action
+      }
 
       const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', {
+        result_id: parseInt(currentResultId, 10),
         question_id: question.id,
         user_answer: userAnswerPayload,
       }, {
@@ -341,7 +368,7 @@ const TestPaperPage = () => {
           <p>{description}</p>
         </div>
         <div className="test-paper-header-nav-side">
-          <Link to="/test-form" className="paper-to-generator">新建试卷</Link>
+          <Link to="/" className="paper-to-generator">新建试卷</Link>
           <Link to="/history" className="paper-to-history">历史试卷</Link>
         </div>
       </div>

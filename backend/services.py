@@ -171,6 +171,66 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
 
     return db_result, grading_results
 
+def get_test_result_by_id(db: Session, result_id: int) -> models.TestPaperResult:
+    """Fetches a single test result by its ID."""
+    result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
+    return result
+
+
+async def generate_and_save_overall_feedback(db: Session, request: schemas.GenerateOverallFeedbackRequest) -> str:
+    """Generates overall feedback, saves it to the specific result, and returns the feedback."""
+    test_paper = get_test_paper_by_id(db, int(request.test_id))
+    questions_map = {str(q.id): q for q in test_paper.questions}
+
+    graded_info = []
+    for user_answer in request.answers:
+        question = questions_map.get(user_answer.question_id)
+        if not question: continue
+
+        graded_info.append({
+            "stem": question.stem,
+            "options": question.options,
+            "user_answer": get_formatted_user_answer(question, user_answer),
+            "correct_answer": question.correct_answer,
+            "is_correct": grade_objective_question(question, user_answer),
+            "explanation": (question.correct_answer or {}).get('explanation', '')
+        })
+
+    feedback = await get_overall_feedback_from_ai(graded_info)
+
+    # Save the feedback to the database
+    test_result = get_test_result_by_id(db, request.result_id)
+    test_result.overall_feedback = feedback
+    db.commit()
+
+    return feedback
+
+
+async def generate_and_save_single_question_feedback(db: Session, request: schemas.GenerateSingleQuestionFeedbackRequest) -> str:
+    """Generates feedback for a single question, saves it, and returns it."""
+    question = get_question_by_id(db, int(request.question_id))
+    user_answer = request.user_answer or schemas.UserAnswer(question_id=request.question_id, question_type=question.question_type)
+
+    feedback = await get_single_question_feedback_from_ai(question, user_answer)
+
+    # Save the feedback to the database
+    test_result = get_test_result_by_id(db, request.result_id)
+    if test_result.question_feedbacks is None:
+        test_result.question_feedbacks = {}
+    
+    # Use mutable_json from sqlalchemy.dialects.postgresql import JSONB
+    # For sqlite, we have to copy and reassign
+    new_feedbacks = test_result.question_feedbacks.copy()
+    new_feedbacks[request.question_id] = feedback
+    test_result.question_feedbacks = new_feedbacks
+    
+    db.commit()
+
+    return feedback
+
+
 def get_all_test_results(db: Session):
     """Fetches all test paper results and calculates statistics on the fly."""
     results = (

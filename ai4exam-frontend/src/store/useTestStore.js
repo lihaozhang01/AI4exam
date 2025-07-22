@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 
-const useTestStore = create((set) => ({
+const useTestStore = create((set, get) => ({
   testData: null,
   isLoading: false,
   userAnswers: {},
@@ -10,6 +10,7 @@ const useTestStore = create((set) => ({
   submissionStatus: 'in_progress', // in_progress, submitted_and_showing_answers
   overallFeedback: null, // 存储整卷的AI反馈
   singleQuestionFeedbacks: {}, // 存储单个问题的AI反馈 { question_id: feedback }
+  resultId: null, // 存储当前测试结果的ID
 
   setTestData: (data) => set({
     testData: data,
@@ -18,6 +19,8 @@ const useTestStore = create((set) => ({
     submissionStatus: 'in_progress', // 生成新试卷时，重置提交状态为进行中
     overallFeedback: null,
     singleQuestionFeedbacks: {},
+    resultId: null,
+    resultId: null,
   }),
   setTestForHistory: (data) => set({ testData: data }), // 新增：专为历史记录设置试卷数据，不重置其他状态
   setIsLoading: (loading) => set({ isLoading: loading }),
@@ -34,7 +37,10 @@ const useTestStore = create((set) => ({
   setUserAnswers: (answers) => set({ userAnswers: answers }),
 
   // 新增：保存批改结果
-  setGradingResults: (results) => set({ gradingResults: results }),
+  setGradingResults: (results, resultId) => set({
+    gradingResults: results,
+    resultId: resultId,
+  }),
 
   setSubmissionStatus: (status) => set({ submissionStatus: status }),
 

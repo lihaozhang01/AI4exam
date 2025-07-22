@@ -111,33 +111,13 @@ async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = 
 
 @app.post("/generate-overall-feedback", response_model=schemas.GenerateOverallFeedbackResponse)
 async def generate_overall_feedback(request: schemas.GenerateOverallFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    test_paper = services.get_test_paper_by_id(db, int(request.test_id))
-    questions_map = {str(q.id): q for q in test_paper.questions}
-    
-    graded_info = []
-    for user_answer in request.answers:
-        question = questions_map.get(user_answer.question_id)
-        if not question: continue
-        
-        graded_info.append({
-            "stem": question.stem,
-            "options": question.options,
-            "user_answer": services.get_formatted_user_answer(question, user_answer),
-            "correct_answer": question.correct_answer,
-            "is_correct": services.grade_objective_question(question, user_answer),
-            "explanation": (question.correct_answer or {}).get('explanation', '')
-        })
-    
-    feedback = await services.get_overall_feedback_from_ai(graded_info)
+    feedback = await services.generate_and_save_overall_feedback(db, request)
     return schemas.GenerateOverallFeedbackResponse(feedback=feedback)
 
 
 @app.post("/generate-single-question-feedback", response_model=schemas.GenerateSingleQuestionFeedbackResponse)
 async def generate_single_question_feedback(request: schemas.GenerateSingleQuestionFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    question = services.get_question_by_id(db, int(request.question_id))
-    user_answer = request.user_answer or schemas.UserAnswer(question_id=request.question_id)
-    
-    feedback = await services.get_single_question_feedback_from_ai(question, user_answer)
+    feedback = await services.generate_and_save_single_question_feedback(db, request)
     return schemas.GenerateSingleQuestionFeedbackResponse(feedback=feedback)
 
 

@@ -20,6 +20,8 @@ class TestPaperResult(Base):
     test_paper_id = Column(Integer, ForeignKey('test_papers.id'))
     user_answers = Column(JSON) # Store user's answers
     grading_results = Column(JSON) # Store grading results
+    overall_feedback = Column(Text, nullable=True) # Store overall AI feedback
+    question_feedbacks = Column(JSON, nullable=True) # Store individual question AI feedbacks
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     test_paper = relationship('TestPaper', back_populates='results')
 
