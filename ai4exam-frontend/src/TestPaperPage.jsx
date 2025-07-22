@@ -10,6 +10,7 @@ import SingleChoiceQuestion from './components/SingleChoiceQuestion';
 import MultipleChoiceQuestion from './components/MultipleChoiceQuestion';
 import FillInTheBlankQuestion from './components/FillInTheBlankQuestion';
 import EssayQuestion from './components/EssayQuestion';
+import MarkdownRenderer from './components/MarkdownRenderer';
 import './TestPaperPage.css';
 
 // Helper function to build the payload for API calls
@@ -274,7 +275,7 @@ const TestPaperPage = () => {
         {overallFeedback && (
           <Alert
             message="AI 总结与点评"
-            description={overallFeedback}
+            description={<MarkdownRenderer content={overallFeedback} />}
             type="info"
             showIcon
             style={{ marginBottom: '24px' }}
@@ -302,7 +303,7 @@ const TestPaperPage = () => {
                 {singleQuestionFeedbacks[question.id] && (
                   <Alert
                     message="AI 点评"
-                    description={singleQuestionFeedbacks[question.id]}
+                    description={<MarkdownRenderer content={singleQuestionFeedbacks[question.id]} />}
                     type="info"
                     showIcon
                     style={{ marginTop: '16px' }}
