@@ -113,9 +113,7 @@ const TestPaperPage = () => {
           }
         });
         setUserAnswers(formattedAnswers);
-
         setGradingResults(result.grading_results);
-
         setSubmissionStatus('submitted_and_showing_answers');
         setOriginalTestId(result.test_paper_id);
 
@@ -135,9 +133,8 @@ const TestPaperPage = () => {
     } else if (!testData) {
       navigate('/');
     }
+    // Using location.key forces a re-fetch when navigating to the same route
   }, [resultId, testId, navigate, location.key]);
-
-
 
   const handleSubmitAndShowAnswers = async () => {
     setIsLoading(true);
@@ -148,7 +145,6 @@ const TestPaperPage = () => {
       }
 
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
-      console.log(`Answer Texts:`, allAnswers[0].answer_texts);
       const apiKey = localStorage.getItem('api_key');
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');
@@ -167,7 +163,7 @@ const TestPaperPage = () => {
 
       setGradingResults(response.data.results);
       setSubmissionStatus('submitted_and_showing_answers');
-      message.success('客观题已自动批改！现在可以请求AI进行详细点评。');
+      message.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
     } catch (error) {
       console.error("Error submitting answers:", error.response ? error.response.data : error.message);
       message.error("提交答案失败，请检查网络连接或稍后再试。" + (error.response ? `(${error.response.status})` : ''));
@@ -178,14 +174,12 @@ const TestPaperPage = () => {
 
   const handleRetakeTest = () => {
     if (originalTestId) {
-      // 重置状态并在导航时传递一个新的key，以强制useEffect重新运行
       reset();
       navigate(`/testpaper/${originalTestId}`, { state: { key: Date.now() } });
     }
   };
 
   const handleRequestAiFeedback = async () => {
-
     setIsLoading(true);
     message.info('正在请求AI对整卷进行分析，请稍候...');
     try {
@@ -195,7 +189,6 @@ const TestPaperPage = () => {
       }
 
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
-
       const apiKey = localStorage.getItem('api_key');
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');
@@ -238,10 +231,30 @@ const TestPaperPage = () => {
         return; // No loading state change needed here as it's per-question
       }
 
+      let userAnswerPayload;
+      switch (question.type) {
+        case 'single_choice':
+          userAnswerPayload = { question_type: 'single_choice', answer_index: userAnswer };
+          break;
+        case 'multiple_choice':
+          userAnswerPayload = { question_type: 'multiple_choice', answer_indices: userAnswer || [] };
+          break;
+        case 'fill_in_the_blank':
+          userAnswerPayload = { question_type: 'fill_in_the_blank', answer_texts: userAnswer || [] };
+          break;
+        case 'essay':
+          userAnswerPayload = { question_type: 'essay', answer_text: userAnswer || "" };
+          break;
+        default:
+          message.error(`Unsupported question type: ${question.type}`);
+          return;
+      }
+
+      console.log("Sending payload for single question feedback:", { question_id: question.id, user_answer: userAnswerPayload });
+
       const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', {
-        test_id: testData.test_id,
         question_id: question.id,
-        user_answer: userAnswer, // 发送处理过的答案
+        user_answer: userAnswerPayload,
       }, {
         headers: {
           'X-Goog-Api-Key': apiKey,
@@ -254,8 +267,6 @@ const TestPaperPage = () => {
       message.error('请求该题反馈失败，请稍后再试。' + (error.response ? `(${error.response.status})` : ''));
     }
   };
-
-
 
   const renderContent = () => (
     !testData || !testData.questions ? null :
@@ -360,4 +371,5 @@ const TestPaperPage = () => {
     </div>
   );
 };
+
 export default TestPaperPage;

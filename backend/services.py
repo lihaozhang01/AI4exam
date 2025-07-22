@@ -283,7 +283,8 @@ async def get_overall_feedback_from_ai(graded_info: List[Dict]) -> str:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
 
 async def get_single_question_feedback_from_ai(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> str:
-    q_type = question.question_type
+    # Use the question_type from the user_answer payload
+    q_type = user_answer.question_type
     options = question.options or []
     user_answer_str = "未作答"
 
@@ -291,17 +292,22 @@ async def get_single_question_feedback_from_ai(question: models.DBQuestion, user
         user_answer_str = options[user_answer.answer_index]
     elif q_type == 'multiple_choice' and user_answer.answer_indices:
         user_answer_str = ", ".join([options[i] for i in user_answer.answer_indices if 0 <= i < len(options)])
-    elif q_type == 'fill_in_blank' and user_answer.answer_texts:
+    elif q_type == 'fill_in_the_blank' and user_answer.answer_texts:
         user_answer_str = ", ".join(user_answer.answer_texts)
     elif q_type == 'essay' and user_answer.answer_text:
         user_answer_str = user_answer.answer_text
+
+    question_content = {
+        "type": question.question_type,
+        "stem": question.stem,
+        "options": question.options,
+        "correct_answer": question.correct_answer,
+        "explanation": (question.correct_answer or {}).get('explanation', '')
+    }
     
     prompt = SINGLE_QUESTION_FEEDBACK_PROMPT.format(
-        question_content=question.stem,
-        options=options,
-        user_answer=user_answer_str,
-        correct_answer=question.correct_answer or {},
-        explanation=(question.correct_answer or {}).get('explanation', '')
+        question_content=json.dumps(question_content, ensure_ascii=False, indent=4),
+        user_answer=user_answer_str
     )
     try:
         model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
