@@ -11,6 +11,7 @@ class GenerateTestConfig(BaseModel):
     description: str
     question_config: List[QuestionConfig]
     difficulty: str
+    generation_prompt: Optional[str] = None
 
 # --- Answer Models for AI Generation ---
 class SingleChoiceAnswer(BaseModel):
@@ -66,6 +67,7 @@ class GenerateOverallFeedbackRequest(BaseModel):
     result_id: int
     test_id: str
     answers: List[UserAnswer]
+    overall_feedback_prompt: Optional[str] = None
 
 class GenerateOverallFeedbackResponse(BaseModel):
     feedback: str
@@ -74,6 +76,7 @@ class GenerateSingleQuestionFeedbackRequest(BaseModel):
     result_id: int
     question_id: str
     user_answer: Optional[UserAnswer] = None
+    single_question_feedback_prompt: Optional[str] = None
 
 class GenerateSingleQuestionFeedbackResponse(BaseModel):
     feedback: str
@@ -86,6 +89,7 @@ class QuestionInfo(BaseModel):
 class EvaluateShortAnswerRequest(BaseModel):
     question: QuestionInfo
     user_answer: str
+    evaluation_prompt: Optional[str] = None
 
 class EvaluateShortAnswerResponse(BaseModel):
     score: int

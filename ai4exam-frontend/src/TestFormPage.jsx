@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Input, Button, Upload, message, InputNumber, Spin, Modal } from 'antd';
+import { Input, Button, Upload, message, InputNumber, Spin } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
+import SettingsModal from './components/SettingsModal';
 import './TestFormPage.css'; // 引入新的CSS文件
 
 const { TextArea } = Input;
@@ -39,16 +40,6 @@ const TestFormPage = () => {
       setIsModalOpen(true); // 如果没有key，则自动弹出
     }
   }, []);
-
-  const handleOk = () => {
-    localStorage.setItem('api_key', apiKey);
-    setIsModalOpen(false);
-    message.success('API Key已保存！');
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
 
   const handleQuantityChange = (type, value) => {
     setQuestionQuantities(prev => ({ ...prev, [type]: value }));
@@ -94,12 +85,22 @@ const TestFormPage = () => {
         return;
       }
 
-      const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'X-Goog-Api-Key': apiKey,
-        }
-      });
+      const apiProvider = localStorage.getItem('api_provider') || 'google';
+      const generationModel = localStorage.getItem('generation_model') || (apiProvider === 'google' ? 'gemini-pro' : 'gpt-3.5-turbo');
+      const generationPrompt = localStorage.getItem('generation_prompt') || '';
+
+      const headers = {
+        'Content-Type': 'multipart/form-data',
+        'X-Api-Key': apiKey,
+        'X-Provider': apiProvider,
+        'X-Generation-Model': generationModel
+      };
+
+      if (generationPrompt) {
+        headers['X-Generation-Prompt'] = generationPrompt;
+      }
+
+      const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });
 
       setTestData(response.data);
       message.success('试卷生成成功！正在跳转...');
@@ -197,26 +198,18 @@ const TestFormPage = () => {
 
       <Link to="/history" className="history-link">查看历史试卷 →</Link>
 
+      <SettingsModal
+        isVisible={isModalOpen}
+        onOk={() => setIsModalOpen(false)}
+        onCancel={() => setIsModalOpen(false)}
+      />
+
       <Button
         className="settings-btn"
         icon={<SettingOutlined />}
         onClick={() => setIsModalOpen(true)}
       />
 
-      <Modal
-        title="设置API Key"
-        open={isModalOpen}
-        onOk={handleOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Input
-          placeholder="请输入您的API Key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
-      </Modal>
     </div>
   );
 };

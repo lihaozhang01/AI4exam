@@ -319,8 +319,9 @@ def get_formatted_user_answer(question: models.DBQuestion, user_answer: schemas.
 
 # --- AI Interaction Services ---
 
-async def generate_test_from_ai(knowledge_content: str, config: schemas.GenerateTestConfig) -> Dict[str, Any]:
-    prompt = GENERATE_TEST_PROMPT.format(
+async def generate_test_from_ai(knowledge_content: str, config: schemas.GenerateTestConfig, generation_prompt: str) -> Dict[str, Any]:
+    system_prompt = generation_prompt or GENERATE_TEST_PROMPT['system_prompt']
+    prompt = f"{system_prompt}\n\n{GENERATE_TEST_PROMPT['format_instructions']}".format(
         knowledge_content=knowledge_content,
         config_json=config.model_dump_json(indent=2)
     )
@@ -331,8 +332,9 @@ async def generate_test_from_ai(knowledge_content: str, config: schemas.Generate
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI test generation failed: {e}")
 
-async def get_overall_feedback_from_ai(graded_info: List[Dict]) -> str:
-    prompt = OVERALL_FEEDBACK_PROMPT.format(
+async def get_overall_feedback_from_ai(graded_info: List[Dict], overall_feedback_prompt: str) -> str:
+    system_prompt = overall_feedback_prompt or OVERALL_FEEDBACK_PROMPT['system_prompt']
+    prompt = f"{system_prompt}\n\n{OVERALL_FEEDBACK_PROMPT['format_instructions']}".format(
         graded_info=json.dumps(graded_info, ensure_ascii=False, indent=2)
     )
     try:
@@ -342,7 +344,7 @@ async def get_overall_feedback_from_ai(graded_info: List[Dict]) -> str:
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
 
-async def get_single_question_feedback_from_ai(question: models.DBQuestion, user_answer: schemas.UserAnswer) -> str:
+async def get_single_question_feedback_from_ai(question: models.DBQuestion, user_answer: schemas.UserAnswer, single_question_feedback_prompt: str) -> str:
     # Use the question_type from the user_answer payload
     q_type = user_answer.question_type
     options = question.options or []
@@ -365,7 +367,8 @@ async def get_single_question_feedback_from_ai(question: models.DBQuestion, user
         "explanation": (question.correct_answer or {}).get('explanation', '')
     }
     
-    prompt = SINGLE_QUESTION_FEEDBACK_PROMPT.format(
+    system_prompt = single_question_feedback_prompt or SINGLE_QUESTION_FEEDBACK_PROMPT['system_prompt']
+    prompt = f"{system_prompt}\n\n{SINGLE_QUESTION_FEEDBACK_PROMPT['format_instructions']}".format(
         question_content=json.dumps(question_content, ensure_ascii=False, indent=4),
         user_answer=user_answer_str
     )
@@ -376,8 +379,9 @@ async def get_single_question_feedback_from_ai(question: models.DBQuestion, user
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
 
-async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest) -> schemas.EvaluateShortAnswerResponse:
-    prompt = EVALUATE_ESSAY_PROMPT.format(
+async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest, evaluation_prompt: str) -> schemas.EvaluateShortAnswerResponse:
+    system_prompt = evaluation_prompt or EVALUATE_ESSAY_PROMPT['system_prompt']
+    prompt = f"{system_prompt}\n\n{EVALUATE_ESSAY_PROMPT['format_instructions']}".format(
         question_stem=request.question.stem,
         reference_explanation=request.question.reference_explanation,
         user_answer=request.user_answer

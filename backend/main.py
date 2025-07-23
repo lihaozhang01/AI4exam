@@ -2,6 +2,7 @@ import os
 from typing import Optional, List
 
 import google.generativeai as genai
+import httpx
 from fastapi import Header, FastAPI, UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -30,17 +31,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def configure_genai(x_goog_api_key: Optional[str] = Header(None, alias="X-Goog-Api-Key")):
-    """Dependency to configure Google AI with API key from header or environment."""
-    api_key = x_goog_api_key or os.environ.get("GOOGLE_API_KEY")
+async def configure_genai(
+    x_goog_api_key: Optional[str] = Header(None, alias="X-Goog-Api-Key"),
+    x_provider: Optional[str] = Header('google', alias="X-Provider")
+):
+    """Dependency to configure AI provider based on header."""
+    api_key = x_goog_api_key
     if not api_key:
-        raise HTTPException(400, "Google API Key is missing. Provide it in the 'X-Goog-Api-Key' header.")
-    try:
-        genai.configure(api_key=api_key)
-    except Exception as e:
-        raise HTTPException(500, f"Failed to configure Google AI: {e}")
+        raise HTTPException(400, "API Key is missing. Provide it in the 'X-Goog-Api-Key' header.")
+
+    if x_provider == 'google':
+        try:
+            genai.configure(api_key=api_key)
+        except Exception as e:
+            raise HTTPException(500, f"Failed to configure Google AI: {e}")
+    elif x_provider == 'siliconflow':
+        # For SiliconFlow, we test the key by making a request to a protected endpoint
+        try:
+            async with httpx.AsyncClient() as client:
+                headers = {'Authorization': f'Bearer {api_key}'}
+                # Use a lightweight model endpoint for testing
+                response = await client.post(
+                    'https://api.siliconflow.cn/v1/chat/completions',
+                    headers=headers,
+                    json={'model': 'Qwen/Qwen3-8B', 'messages': [{'role': 'user', 'content': 'test'}], 'max_tokens': 1}
+                )
+                response.raise_for_status() # Raise an exception for 4xx/5xx status codes
+        except httpx.HTTPStatusError as e:
+            # Log the full error for debugging
+            error_detail = f"SiliconFlow API Key test failed. Status: {e.response.status_code}. Response: {e.response.text}"
+            print(error_detail) # Or use a proper logger
+            raise HTTPException(status_code=e.response.status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(500, f"An unexpected error occurred with SiliconFlow: {e}")
+    elif x_provider == 'volcengine':
+        # Placeholder for VolcEngine API key validation
+        # You would typically use their SDK or a specific endpoint
+        # For now, we'll just assume the key is valid if provided
+        pass
+    else:
+        raise HTTPException(400, f"Unsupported API provider: {x_provider}")
 
 # --- API Endpoints ---
+
+@app.post("/test-api-key")
+async def test_api_key(_: None = Depends(configure_genai)):
+    # The configure_genai dependency already handles validation.
+    # If it executes without raising an exception, the key is considered valid.
+    return {"message": "API Key is valid."}
+
 
 @app.post("/generate-test", response_model=schemas.GenerateTestResponse)
 async def generate_test(
@@ -56,7 +95,11 @@ async def generate_test(
     config = schemas.GenerateTestConfig.model_validate_json(config_json)
     knowledge_content = await source_file.read().decode('utf-8') if source_file else source_text
 
-    ai_response = await services.generate_test_from_ai(knowledge_content, config)
+    ai_response = await services.generate_test_from_ai(
+        knowledge_content, 
+        config,
+        generation_prompt=config.generation_prompt
+    )
 
     # 使用service函数创建试卷和问题
     source_type = 'file' if source_file else 'text'
@@ -111,19 +154,30 @@ async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = 
 
 @app.post("/generate-overall-feedback", response_model=schemas.GenerateOverallFeedbackResponse)
 async def generate_overall_feedback(request: schemas.GenerateOverallFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    feedback = await services.generate_and_save_overall_feedback(db, request)
+    feedback = await services.generate_and_save_overall_feedback(
+        db, 
+        request,
+        overall_feedback_prompt=request.overall_feedback_prompt
+    )
     return schemas.GenerateOverallFeedbackResponse(feedback=feedback)
 
 
 @app.post("/generate-single-question-feedback", response_model=schemas.GenerateSingleQuestionFeedbackResponse)
 async def generate_single_question_feedback(request: schemas.GenerateSingleQuestionFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    feedback = await services.generate_and_save_single_question_feedback(db, request)
+    feedback = await services.generate_and_save_single_question_feedback(
+        db, 
+        request,
+        single_question_feedback_prompt=request.single_question_feedback_prompt
+    )
     return schemas.GenerateSingleQuestionFeedbackResponse(feedback=feedback)
 
 
 @app.post("/evaluate-short-answer", response_model=schemas.EvaluateShortAnswerResponse)
 async def evaluate_short_answer(request: schemas.EvaluateShortAnswerRequest, _: None = Depends(configure_genai)):
-    response = await services.evaluate_essay_with_ai(request)
+    response = await services.evaluate_essay_with_ai(
+        request,
+        evaluation_prompt=request.evaluation_prompt
+    )
     return response
 
 
