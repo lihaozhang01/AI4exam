@@ -98,7 +98,7 @@ const TestFormPage = () => {
       };
 
       if (generationPrompt) {
-        headers['X-Generation-Prompt'] = generationPrompt;
+        headers['X-Generation-Prompt'] = encodeURIComponent(generationPrompt);
       }
 
       const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });

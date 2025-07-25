@@ -169,7 +169,9 @@ const TestPaperPage = () => {
         answers: allAnswers,
       }, {
         headers: {
-          'X-Goog-Api-Key': apiKey,
+          'X-Api-Key': apiKey,
+          'X-Generation-Model': generationModel,
+          'X-Generation-Prompt': generationPrompt ? encodeURIComponent(generationPrompt) : '',
         }
       });
 
@@ -206,6 +208,9 @@ const TestPaperPage = () => {
 
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
+      const generationModel = localStorage.getItem('generation_model');
+      const overallFeedbackPrompt = localStorage.getItem('overall_feedback_prompt');
+
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');
         setIsLoading(false);
@@ -225,7 +230,9 @@ const TestPaperPage = () => {
         answers: answersToSend,
       }, {
         headers: {
-          'X-Goog-Api-Key': apiKey,
+          'X-Api-Key': apiKey,
+          'X-Generation-Model': generationModel,
+          'X-Generation-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '',
         }
       });
       setOverallFeedback(response.data.feedback);
@@ -250,6 +257,9 @@ const TestPaperPage = () => {
       }
 
       const apiKey = localStorage.getItem('api_key');
+      const generationModel = localStorage.getItem('generation_model');
+      const singleQuestionFeedbackPrompt = localStorage.getItem('single_question_feedback_prompt');
+
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');
         return; // No loading state change needed here as it's per-question
@@ -286,7 +296,9 @@ const TestPaperPage = () => {
         user_answer: userAnswerPayload,
       }, {
         headers: {
-          'X-Goog-Api-Key': apiKey,
+          'X-Api-Key': apiKey,
+          'X-Generation-Model': generationModel,
+          'X-Generation-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '',
         }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);

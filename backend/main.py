@@ -1,6 +1,7 @@
 import os
 from typing import Optional, List
 import uvicorn  # --- 新增的導入 ---
+import urllib.parse
 
 import google.generativeai as genai
 from fastapi import Header, FastAPI, UploadFile, File, Form, Depends, HTTPException
@@ -43,11 +44,8 @@ def configure_genai(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
     if not api_key:
         logger.error("API Key is missing from 'X-Api-Key' header and environment.")
         raise HTTPException(400, "Google API Key is missing. Provide it in the 'X-Api-Key' header.")
-    
-    logger.info(f"Received API Key ending with '...{api_key[-4:]}'. Attempting to configure genai.")
     try:
         genai.configure(api_key=api_key)
-        logger.info("Successfully configured Google AI.")
     except Exception as e:
         logger.error(f"Failed to configure Google AI: {e}")
         raise HTTPException(500, f"Failed to configure Google AI: {e}")
@@ -64,6 +62,7 @@ async def generate_test(
     generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
     _: None = Depends(configure_genai)
 ):
+    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
     if not source_file and not source_text:
         raise HTTPException(400, "Either source_file or source_text must be provided.")
 
@@ -83,7 +82,7 @@ async def generate_test(
     knowledge_content = knowledge_content.strip()
     
 
-    ai_response = await services.generate_test_from_ai(knowledge_content, config, generation_model, generation_prompt)
+    ai_response = await services.generate_test_from_ai(knowledge_content, config, generation_model, decoded_prompt)
 
     # 使用service函数创建试卷和问题
     db_test_paper = services.create_test_paper(db, source_content=knowledge_content, ai_response=ai_response)
@@ -143,7 +142,8 @@ async def generate_overall_feedback(
     generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
     _: None = Depends(configure_genai)
 ):
-    feedback = await services.generate_and_save_overall_feedback(db, request, generation_model, generation_prompt)
+    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
+    feedback = await services.generate_and_save_overall_feedback(db, request, generation_model, decoded_prompt)
     return schemas.GenerateOverallFeedbackResponse(feedback=feedback)
 
 
@@ -155,7 +155,8 @@ async def generate_single_question_feedback(
     generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
     _: None = Depends(configure_genai)
 ):
-    feedback = await services.generate_and_save_single_question_feedback(db, request, generation_model, generation_prompt)
+    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
+    feedback = await services.generate_and_save_single_question_feedback(db, request, generation_model, decoded_prompt)
     return schemas.GenerateSingleQuestionFeedbackResponse(feedback=feedback)
 
 
@@ -166,7 +167,8 @@ async def evaluate_short_answer(
     generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
     _: None = Depends(configure_genai)
 ):
-    response = await services.evaluate_essay_with_ai(request, generation_model, generation_prompt)
+    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
+    response = await services.evaluate_essay_with_ai(request, generation_model, decoded_prompt)
     return response
 @app.post("/test-connectivity")
 async def test_connectivity(_: None = Depends(configure_genai)):
