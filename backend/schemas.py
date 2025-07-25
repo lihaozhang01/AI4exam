@@ -60,6 +60,7 @@ class ObjectiveGradeResult(BaseModel):
     is_correct: bool
 
 class GradeQuestionsResponse(BaseModel):
+    result_id: int
     results: List[ObjectiveGradeResult]
 
 # --- Feedback Models ---
@@ -102,7 +103,6 @@ class EvaluateShortAnswerResponse(BaseModel):
 class TestPaper(BaseModel):
     id: int
     name: str
-    source_type: str
     created_at: datetime.datetime
 
     class Config:

@@ -73,7 +73,8 @@ const TestFormPage = () => {
       const formData = new FormData();
       if (fileList.length > 0) {
         formData.append('source_file', fileList[0].originFileObj);
-      } else {
+      }
+      if (sourceText) {
         formData.append('source_text', sourceText);
       }
       formData.append('config_json', JSON.stringify(config));
@@ -86,7 +87,7 @@ const TestFormPage = () => {
       }
 
       const apiProvider = localStorage.getItem('api_provider') || 'google';
-      const generationModel = localStorage.getItem('generation_model') || (apiProvider === 'google' ? 'gemini-pro' : 'gpt-3.5-turbo');
+      const generationModel = localStorage.getItem('generation_model') 
       const generationPrompt = localStorage.getItem('generation_prompt') || '';
 
       const headers = {
@@ -117,16 +118,10 @@ const TestFormPage = () => {
 
   const handleFileChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
-    if (newFileList.length > 0) {
-      setSourceText(''); // 如果上传了文件，清空文本输入
-    }
   };
 
   const handleTextChange = (e) => {
     setSourceText(e.target.value);
-    if (e.target.value) {
-      setFileList([]); // 如果输入了文本，清空文件列表
-    }
   }
 
   return (

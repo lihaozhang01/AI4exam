@@ -37,12 +37,12 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def configure_genai(x_goog_api_key: Optional[str] = Header(None, alias="X-Goog-Api-Key")):
+def configure_genai(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
     """Dependency to configure Google AI with API key from header or environment."""
-    api_key = x_goog_api_key or os.environ.get("GOOGLE_API_KEY")
+    api_key = x_api_key or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        logger.error("API Key is missing from 'X-Goog-Api-Key' header and environment.")
-        raise HTTPException(400, "Google API Key is missing. Provide it in the 'X-Goog-Api-Key' header.")
+        logger.error("API Key is missing from 'X-Api-Key' header and environment.")
+        raise HTTPException(400, "Google API Key is missing. Provide it in the 'X-Api-Key' header.")
     
     logger.info(f"Received API Key ending with '...{api_key[-4:]}'. Attempting to configure genai.")
     try:
@@ -60,13 +60,15 @@ async def generate_test(
     source_file: Optional[UploadFile] = File(None),
     source_text: Optional[str] = Form(None),
     config_json: str = Form(...),
+    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
     _: None = Depends(configure_genai)
 ):
     if not source_file and not source_text:
         raise HTTPException(400, "Either source_file or source_text must be provided.")
 
     config = schemas.GenerateTestConfig.model_validate_json(config_json)
-    file_content = await source_file.read().decode('utf-8') if source_file else ""
+    file_content = (await source_file.read()).decode('utf-8') if source_file else ""
     text_content = source_text if source_text else ""
     # Combine file content and text content
     knowledge_content = ""
@@ -79,12 +81,12 @@ async def generate_test(
 {text_content}
 """
     knowledge_content = knowledge_content.strip()
-    config.knowledge_content = knowledge_content
+    
 
-    ai_response = await services.generate_test_from_ai(config)
+    ai_response = await services.generate_test_from_ai(knowledge_content, config, generation_model, generation_prompt)
 
     # 使用service函数创建试卷和问题
-    db_test_paper = services.create_test_paper(db, knowledge_content, ai_response)
+    db_test_paper = services.create_test_paper(db, source_content=knowledge_content, ai_response=ai_response)
 
     # 从数据库记录构建响应模型
     questions_data = [
@@ -130,24 +132,41 @@ async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = 
     )
 
     # API直接返回后端生成的评分结果
-    return schemas.GradeQuestionsResponse(results=grading_results)
+    return schemas.GradeQuestionsResponse(result_id=db_result.id, results=grading_results)
 
 
 @app.post("/generate-overall-feedback", response_model=schemas.GenerateOverallFeedbackResponse)
-async def generate_overall_feedback(request: schemas.GenerateOverallFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    feedback = await services.generate_and_save_overall_feedback(db, request)
+async def generate_overall_feedback(
+    request: schemas.GenerateOverallFeedbackRequest, 
+    db: Session = Depends(get_db), 
+    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
+    _: None = Depends(configure_genai)
+):
+    feedback = await services.generate_and_save_overall_feedback(db, request, generation_model, generation_prompt)
     return schemas.GenerateOverallFeedbackResponse(feedback=feedback)
 
 
 @app.post("/generate-single-question-feedback", response_model=schemas.GenerateSingleQuestionFeedbackResponse)
-async def generate_single_question_feedback(request: schemas.GenerateSingleQuestionFeedbackRequest, db: Session = Depends(get_db), _: None = Depends(configure_genai)):
-    feedback = await services.generate_and_save_single_question_feedback(db, request)
+async def generate_single_question_feedback(
+    request: schemas.GenerateSingleQuestionFeedbackRequest, 
+    db: Session = Depends(get_db), 
+    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
+    _: None = Depends(configure_genai)
+):
+    feedback = await services.generate_and_save_single_question_feedback(db, request, generation_model, generation_prompt)
     return schemas.GenerateSingleQuestionFeedbackResponse(feedback=feedback)
 
 
 @app.post("/evaluate-short-answer", response_model=schemas.EvaluateShortAnswerResponse)
-async def evaluate_short_answer(request: schemas.EvaluateShortAnswerRequest, _: None = Depends(configure_genai)):
-    response = await services.evaluate_essay_with_ai(request)
+async def evaluate_short_answer(
+    request: schemas.EvaluateShortAnswerRequest, 
+    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
+    _: None = Depends(configure_genai)
+):
+    response = await services.evaluate_essay_with_ai(request, generation_model, generation_prompt)
     return response
 @app.post("/test-connectivity")
 async def test_connectivity(_: None = Depends(configure_genai)):

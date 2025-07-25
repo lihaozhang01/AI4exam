@@ -37,14 +37,13 @@ def get_test_paper_by_id(db: Session, test_id: int) -> models.TestPaper:
         raise HTTPException(status_code=404, detail=f"Test with ID {test_id} not found.")
     return test_paper
 
-def create_test_paper(db: Session, source_type: str, source_content: str, ai_response: Dict[str, Any]) -> models.TestPaper:
+def create_test_paper(db: Session, source_content: str, ai_response: Dict[str, Any]) -> models.TestPaper:
     """Creates a test paper record in the database, including a generated name."""
     # 优先从AI响应中获取标题，否则生成默认标题
-    paper_name = ai_response.get('title', f"基于{source_type}的试卷 - {source_content[:20]}...")
+    paper_name = ai_response.get('title', f"AI生成的试卷 - {source_content[:20]}...")
 
     db_test_paper = models.TestPaper(
         name=paper_name,
-        source_type=source_type,
         source_content=source_content
     )
     db.add(db_test_paper)
@@ -179,7 +178,12 @@ def get_test_result_by_id(db: Session, result_id: int) -> models.TestPaperResult
     return result
 
 
-async def generate_and_save_overall_feedback(db: Session, request: schemas.GenerateOverallFeedbackRequest) -> str:
+async def generate_and_save_overall_feedback(
+    db: Session, 
+    request: schemas.GenerateOverallFeedbackRequest,
+    generation_model: str = None,
+    generation_prompt: str = None
+) -> str:
     """Generates overall feedback, saves it to the specific result, and returns the feedback."""
     test_paper = get_test_paper_by_id(db, int(request.test_id))
     questions_map = {str(q.id): q for q in test_paper.questions}
@@ -198,7 +202,7 @@ async def generate_and_save_overall_feedback(db: Session, request: schemas.Gener
             "explanation": (question.correct_answer or {}).get('explanation', '')
         })
 
-    feedback = await get_overall_feedback_from_ai(graded_info)
+    feedback = await get_overall_feedback_from_ai(graded_info, generation_model, generation_prompt)
 
     # Save the feedback to the database
     test_result = get_test_result_by_id(db, request.result_id)
@@ -208,12 +212,17 @@ async def generate_and_save_overall_feedback(db: Session, request: schemas.Gener
     return feedback
 
 
-async def generate_and_save_single_question_feedback(db: Session, request: schemas.GenerateSingleQuestionFeedbackRequest) -> str:
+async def generate_and_save_single_question_feedback(
+    db: Session, 
+    request: schemas.GenerateSingleQuestionFeedbackRequest,
+    generation_model: str = None,
+    generation_prompt: str = None
+) -> str:
     """Generates feedback for a single question, saves it, and returns it."""
     question = get_question_by_id(db, int(request.question_id))
     user_answer = request.user_answer or schemas.UserAnswer(question_id=request.question_id, question_type=question.question_type)
 
-    feedback = await get_single_question_feedback_from_ai(question, user_answer)
+    feedback = await get_single_question_feedback_from_ai(question, user_answer, generation_model, generation_prompt)
 
     # Save the feedback to the database
     test_result = get_test_result_by_id(db, request.result_id)
@@ -319,32 +328,42 @@ def get_formatted_user_answer(question: models.DBQuestion, user_answer: schemas.
 
 # --- AI Interaction Services ---
 
-async def generate_test_from_ai(knowledge_content: str, config: schemas.GenerateTestConfig, generation_prompt: str) -> Dict[str, Any]:
+async def generate_test_from_ai(
+    knowledge_content: str, 
+    config: schemas.GenerateTestConfig, 
+    generation_model: str = None,
+    generation_prompt: str = None
+) -> Dict[str, Any]:
+    # 优先使用用户指定的模型，否则使用默认模型
+    model_name = generation_model or 'gemini-1.5-flash'
+    # 优先使用用户指定的prompt，否则使用默认prompt
     system_prompt = generation_prompt or GENERATE_TEST_PROMPT['system_prompt']
+    
     prompt = f"{system_prompt}\n\n{GENERATE_TEST_PROMPT['format_instructions']}".format(
         knowledge_content=knowledge_content,
         config_json=config.model_dump_json(indent=2)
     )
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+        model = genai.GenerativeModel(model_name)
         response = await model.generate_content_async(prompt)
         return _extract_json_from_ai_response(response.text)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI test generation failed: {e}")
 
-async def get_overall_feedback_from_ai(graded_info: List[Dict], overall_feedback_prompt: str) -> str:
+async def get_overall_feedback_from_ai(graded_info: List[Dict], generation_model: str = None, overall_feedback_prompt: str = None) -> str:
+    model_name = generation_model or 'gemini-1.5-flash'
     system_prompt = overall_feedback_prompt or OVERALL_FEEDBACK_PROMPT['system_prompt']
     prompt = f"{system_prompt}\n\n{OVERALL_FEEDBACK_PROMPT['format_instructions']}".format(
         graded_info=json.dumps(graded_info, ensure_ascii=False, indent=2)
     )
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+        model = genai.GenerativeModel(model_name)
         response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
 
-async def get_single_question_feedback_from_ai(question: models.DBQuestion, user_answer: schemas.UserAnswer, single_question_feedback_prompt: str) -> str:
+async def get_single_question_feedback_from_ai(question: models.DBQuestion, user_answer: schemas.UserAnswer, generation_model: str = None, single_question_feedback_prompt: str = None) -> str:
     # Use the question_type from the user_answer payload
     q_type = user_answer.question_type
     options = question.options or []
@@ -367,19 +386,21 @@ async def get_single_question_feedback_from_ai(question: models.DBQuestion, user
         "explanation": (question.correct_answer or {}).get('explanation', '')
     }
     
+    model_name = generation_model or 'gemini-1.5-flash'
     system_prompt = single_question_feedback_prompt or SINGLE_QUESTION_FEEDBACK_PROMPT['system_prompt']
     prompt = f"{system_prompt}\n\n{SINGLE_QUESTION_FEEDBACK_PROMPT['format_instructions']}".format(
         question_content=json.dumps(question_content, ensure_ascii=False, indent=4),
         user_answer=user_answer_str
     )
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+        model = genai.GenerativeModel(model_name)
         response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
 
-async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest, evaluation_prompt: str) -> schemas.EvaluateShortAnswerResponse:
+async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest, generation_model: str = None, evaluation_prompt: str = None) -> schemas.EvaluateShortAnswerResponse:
+    model_name = generation_model or 'gemini-1.5-flash'
     system_prompt = evaluation_prompt or EVALUATE_ESSAY_PROMPT['system_prompt']
     prompt = f"{system_prompt}\n\n{EVALUATE_ESSAY_PROMPT['format_instructions']}".format(
         question_stem=request.question.stem,
@@ -387,7 +408,7 @@ async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest, ev
         user_answer=request.user_answer
     )
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+        model = genai.GenerativeModel(model_name)
         response = await model.generate_content_async(prompt)
         ai_response_data = _extract_json_from_ai_response(response.text)
         

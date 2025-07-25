@@ -174,10 +174,11 @@ const TestPaperPage = () => {
       });
 
       setGradingResults(response.data.results, response.data.result_id);
+
       setSubmissionStatus('submitted_and_showing_answers');
       // After submission, navigate to the result page to reflect the URL change
       // This makes the resultId from useParams available and consistent
-      navigate(`/testpaper/${testData.test_id}/result/${response.data.result_id}`, { replace: true });
+      navigate(`/history/${response.data.result_id}`, { replace: true });
       message.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
     } catch (error) {
       console.error("Error submitting answers:", error.response ? error.response.data : error.message);
