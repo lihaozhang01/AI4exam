@@ -7,9 +7,9 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 # 从 schemas 导入 Pydantic 模型，从 models 导入 SQLAlchemy 模型
-from . import schemas
-from . import models
-from .prompts import (
+import schemas
+import models
+from prompts import (
     GENERATE_TEST_PROMPT, EVALUATE_ESSAY_PROMPT, 
     OVERALL_FEEDBACK_PROMPT, SINGLE_QUESTION_FEEDBACK_PROMPT
 )

@@ -99,16 +99,16 @@ class EvaluateShortAnswerResponse(BaseModel):
     reference_explanation: str
 
 # --- Test Paper History --- 
-class TestPaperSchema(BaseModel):
+class TestPaper(BaseModel):
     id: int
     name: str
     source_type: str
     created_at: datetime.datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class TestPaperResultSchema(BaseModel):
+class TestPaperResult(BaseModel):
     id: int
     test_paper_id: int
     user_answers: List[Any]
@@ -116,7 +116,7 @@ class TestPaperResultSchema(BaseModel):
     overall_feedback: Optional[str] = None
     question_feedbacks: Optional[Dict[str, str]] = None
     created_at: datetime.datetime
-    test_paper: TestPaperSchema # 嵌套的TestPaper信息
+    test_paper: TestPaper# 嵌套的TestPaper信息
 
     # 新增的统计字段
     correct_objective_questions: int = 0
@@ -124,4 +124,4 @@ class TestPaperResultSchema(BaseModel):
     total_essay_questions: int = 0
 
     class Config:
-        orm_mode = True
+        from_attributes = True

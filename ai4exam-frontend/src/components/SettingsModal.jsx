@@ -69,7 +69,7 @@ const SettingsModal = ({ isVisible, onOk, onCancel }) => {
     setIsTesting(true);
     setConnectionStatus('unknown');
     try {
-      await axios.post('http://127.0.0.1:8000/test-api-key', {}, {
+      await axios.post('http://127.0.0.1:8000/test-connectivity', {}, {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': values.apiKey,
