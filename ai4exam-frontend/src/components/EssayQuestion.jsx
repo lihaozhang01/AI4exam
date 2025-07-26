@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Input, Tag, Divider, List } from 'antd';
-import ReactMarkdown from 'react-markdown';
+import MarkdownRenderer from './MarkdownRenderer';
 import useTestStore from '../store/useTestStore';
 
 const { TextArea } = Input;
@@ -11,7 +11,8 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
   const isSubmitted = submissionStatus === 'submitted_and_showing_answers';
 
   return (
-    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 论述题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
+    <Card title={`${index + 1}. 论述题`} style={{ marginBottom: '20px' }}>
+      <MarkdownRenderer>{question.stem}</MarkdownRenderer>
       <p>你的回答:</p>
       <TextArea
         rows={6}
@@ -27,7 +28,7 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
             <>
               <Divider>参考答案</Divider>
               <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '4px' }}>
-                <ReactMarkdown>{question.reference_explanation}</ReactMarkdown>
+                <MarkdownRenderer>{question.reference_explanation}</MarkdownRenderer>
               </div>
             </>
           )}

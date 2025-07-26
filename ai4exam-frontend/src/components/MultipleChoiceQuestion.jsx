@@ -1,5 +1,7 @@
 // ... imports ...
+import React from 'react';
 import { Card, Checkbox, Space, Alert } from 'antd';
+import MarkdownRenderer from './MarkdownRenderer';
 import './MultipleChoiceQuestion.css';
 import useTestStore from '../store/useTestStore';
 
@@ -17,7 +19,8 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
   const formatAnswer = (indices) => indices.map(i => String.fromCharCode(65 + i)).join(', ');
 
   return (
-    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 多选题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
+    <Card title={`${index + 1}. 多选题`} style={{ marginBottom: '20px' }}>
+      <MarkdownRenderer>{question.stem}</MarkdownRenderer>
 
       <Space direction="vertical" style={{ width: '100%' }}>
         {question.options.map((option, i) => {
@@ -40,7 +43,7 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
           style={{ marginTop: '15px' }}
           type={gradingResult.is_correct ? 'success' : 'error'}
           message={`你的答案: ${formatAnswer(userAnswers[question.id] || [])} | 正确答案: ${formatAnswer(question.answer.indexes || [])}`}
-          description={question.answer.explanation ? `解析：${question.answer.explanation}` : null}
+          description={question.answer.explanation ? <div>解析：<MarkdownRenderer>{question.answer.explanation}</MarkdownRenderer></div> : null}
         />
       )}
     </Card>

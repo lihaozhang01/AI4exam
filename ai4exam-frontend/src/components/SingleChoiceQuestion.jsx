@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, Radio, Space, Alert, Tag } from 'antd';
+import MarkdownRenderer from './MarkdownRenderer';
 import './SingleChoiceQuestion.css'; // 引入样式文件
 import useTestStore from '../store/useTestStore';
 
@@ -7,7 +8,8 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
   const { userAnswers, updateUserAnswer } = useTestStore();
 
   return (
-    <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 单选题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
+    <Card title={`${index + 1}. 单选题`} style={{ marginBottom: '20px' }}>
+      <MarkdownRenderer>{question.stem}</MarkdownRenderer>
 
       <Space direction="vertical" style={{ width: '100%' }}>
         {question.options.map((option, i) => (
@@ -34,7 +36,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
               ) : (
                 <Tag color="error">回答错误</Tag>
               )}
-              {question.answer.explanation && <div>解析：{question.answer.explanation}</div>}
+              {question.answer.explanation && <div>解析：<MarkdownRenderer>{question.answer.explanation}</MarkdownRenderer></div>}
             </div>
           }
         />

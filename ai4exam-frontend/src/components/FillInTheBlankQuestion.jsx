@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, Input, Alert } from 'antd';
+import MarkdownRenderer from './MarkdownRenderer';
 import useTestStore from '../store/useTestStore';
 
 const FillInTheBlankQuestion = ({ question, index, gradingResult }) => {
@@ -25,10 +26,11 @@ const FillInTheBlankQuestion = ({ question, index, gradingResult }) => {
 
   return (
     <Card title={`${index + 1}. 填空题`} style={{ marginBottom: '20px' }}>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
         {parts.map((part, i) => (
           <React.Fragment key={i}>
-            <span style={{ whiteSpace: 'pre-wrap' }}>{part}</span>
+            <span style={{ display: 'inline-block' }}><MarkdownRenderer>{part}</MarkdownRenderer></span>
             {i < blanks && (
               <Input
                 style={{ width: '150px', margin: '0 8px' }}
@@ -45,7 +47,7 @@ const FillInTheBlankQuestion = ({ question, index, gradingResult }) => {
           style={{ marginTop: '15px' }}
           type={gradingResult.is_correct ? 'success' : 'error'}
           message={`你的答案: ${currentAnswers.length > 0 && currentAnswers.some(ans => ans) ? currentAnswers.join(', ') : '未作答'} | 参考答案: ${question.answer.texts.join(' / ')}`}
-          description={question.answer.explanation ? `解析：${question.answer.explanation}` : null}
+          description={question.answer.explanation ? <div>解析：<MarkdownRenderer>{question.answer.explanation}</MarkdownRenderer></div> : null}
         />
       )}
     </Card>
