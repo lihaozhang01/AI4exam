@@ -158,6 +158,8 @@ const TestPaperPage = () => {
 
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
+      const generationModel = localStorage.getItem('generation_model');
+      const generationPrompt = localStorage.getItem('generation_prompt_for_grading'); // Assuming this is the correct key
       if (!apiKey) {
         message.error('请先在右上角设置中填写您的API Key！');
         setIsLoading(false);

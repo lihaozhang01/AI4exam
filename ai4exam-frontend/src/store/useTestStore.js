@@ -36,10 +36,22 @@ const useTestStore = create((set, get) => ({
 
   setUserAnswers: (answers) => set({ userAnswers: answers }),
 
-  // 新增：保存批改结果
-  setGradingResults: (results, resultId) => set({
-    gradingResults: results,
-    resultId: resultId,
+  // 更新：保存批改结果，并将论述题的参考答案等信息合并回 testData
+  setGradingResults: (results, resultId) => set((state) => {
+    const newQuestions = state.testData.questions.map(q => {
+      const result = results.find(r => r.question_id === q.id);
+      if (result && result.reference_explanation) {
+        return { ...q, reference_explanation: result.reference_explanation };
+      }
+      return q;
+    });
+
+    return {
+      ...state,
+      gradingResults: results,
+      resultId: resultId,
+      testData: { ...state.testData, questions: newQuestions },
+    };
   }),
 
   setSubmissionStatus: (status) => set({ submissionStatus: status }),

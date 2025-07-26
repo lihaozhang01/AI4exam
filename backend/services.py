@@ -75,9 +75,6 @@ def get_question_by_id(db: Session, question_id: int) -> models.DBQuestion:
 # --- Objective Question Grading Logic (Strategy Pattern) ---
 
 def _grade_single_choice(user_answer: schemas.UserAnswer, correct_answer: Dict) -> bool:
-    print(f"--- Grading Single Choice Question ID: {user_answer.question_id} ---")
-    print(f"Received UserAnswer object: {user_answer}")
-    print(f"Correct answer: {correct_answer}")
     
     return user_answer.answer_index is not None and user_answer.answer_index == correct_answer.get('index')
 
@@ -140,8 +137,30 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
 
     # Grade submitted answers
     for user_answer in user_answers:
-        question = questions_map.get(user_answer.question_id)
-        if not question or question.question_type not in GRADING_STRATEGIES:
+        question = questions_map.get(str(user_answer.question_id))
+        if not question:
+            continue
+
+        # 如果是论述题，直接提取参考答案，不进行评分
+        if question.question_type == 'essay':
+            explanation = ""
+            # 参考答案存储在 correct_answer['reference_explanation'] 中
+            if isinstance(question.correct_answer, dict):
+                explanation = question.correct_answer.get('reference_explanation', '')
+            elif isinstance(question.correct_answer, str):
+                # 兼容旧数据或意外的字符串格式
+                explanation = question.correct_answer
+            else:
+                explanation = ""
+            
+            grading_results.append(schemas.EssayGradeResult(
+                question_id=user_answer.question_id,
+                reference_explanation=explanation
+            ))
+            continue
+
+        # 处理客观题
+        if question.question_type not in GRADING_STRATEGIES:
             continue
 
         is_correct = grade_objective_question(question, user_answer)

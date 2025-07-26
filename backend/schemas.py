@@ -59,9 +59,13 @@ class ObjectiveGradeResult(BaseModel):
     question_id: str
     is_correct: bool
 
+class EssayGradeResult(BaseModel):
+    question_id: str
+    reference_explanation: str
+
 class GradeQuestionsResponse(BaseModel):
     result_id: int
-    results: List[ObjectiveGradeResult]
+    results: List[Union[ObjectiveGradeResult, EssayGradeResult]]
 
 # --- Feedback Models ---
 class GenerateOverallFeedbackRequest(BaseModel):

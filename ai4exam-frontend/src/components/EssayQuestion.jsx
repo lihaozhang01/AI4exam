@@ -1,14 +1,14 @@
 import React from 'react';
 import { Card, Input, Tag, Divider, List } from 'antd';
+import ReactMarkdown from 'react-markdown';
 import useTestStore from '../store/useTestStore';
 
 const { TextArea } = Input;
 
 const EssayQuestion = ({ question, index, gradingResult }) => {
-  const { userAnswers, updateUserAnswer } = useTestStore();
+  const { userAnswers, updateUserAnswer, submissionStatus } = useTestStore();
   const userAnswer = userAnswers[question.id] || '';
-  // 提交后，gradingResult会有值
-  const isSubmitted = !!gradingResult;
+  const isSubmitted = submissionStatus === 'submitted_and_showing_answers';
 
   return (
     <Card title={<div style={{ whiteSpace: 'pre-wrap' }}>{`${index + 1}. 论述题：${question.stem}`}</div>} style={{ marginBottom: '20px' }}>
@@ -21,13 +21,17 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
         style={{ marginBottom: '16px' }}
       />
 
-      {isSubmitted && gradingResult && (
+      {isSubmitted && (
         <div>
-          <Divider>参考答案</Divider>
-          <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '4px' }}>
-            <p>{question.answer.explanation}</p>
-          </div>
-          {gradingResult.feedback && (
+          {question.reference_explanation && (
+            <>
+              <Divider>参考答案</Divider>
+              <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '4px' }}>
+                <ReactMarkdown>{question.reference_explanation}</ReactMarkdown>
+              </div>
+            </>
+          )}
+          {gradingResult && gradingResult.feedback && (
             <div style={{ marginTop: '16px' }}>
               <Divider>AI 详细点评</Divider>
               <p><strong>总评: </strong> {gradingResult.feedback}</p>
