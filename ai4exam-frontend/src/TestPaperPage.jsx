@@ -317,12 +317,12 @@ const TestPaperPage = () => {
         {overallFeedback && (
           <Alert
             message="AI 总结与点评"
-            description={<MarkdownRenderer content={overallFeedback} />}
+            description={<MarkdownRenderer>{overallFeedback}</MarkdownRenderer>}
             type="info"
             showIcon
             style={{ marginBottom: '24px' }}
             closable
-            onClose={() => setOverallFeedback(null)} // 允许用户关闭
+            onClose={() => setOverallFeedback(null)}
           />
         )}
         {testData.questions.map((question, index) => (
@@ -345,7 +345,7 @@ const TestPaperPage = () => {
                 {singleQuestionFeedbacks[question.id] && (
                   <Alert
                     message="AI 点评"
-                    description={<MarkdownRenderer content={singleQuestionFeedbacks[question.id]} />}
+                    description={<MarkdownRenderer>{singleQuestionFeedbacks[question.id]}</MarkdownRenderer>}
                     type="info"
                     showIcon
                     style={{ marginTop: '16px' }}
