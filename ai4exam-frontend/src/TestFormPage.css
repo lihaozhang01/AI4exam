@@ -1,5 +1,8 @@
-/* --- 变量定义：统一管理颜色、字体等，体现禅意风格 --- */
+/* * TestFormPage.css
+ * 全面采用 HistoryPage.css 的设计风格，确保视觉统一性
+ */
 :root {
+  /* 直接从 HistoryPage.css 引入设计变量 */
   --primary-text: #333;
   /* 主文本颜色，深灰而非纯黑，更柔和 */
   --secondary-text: #666;
@@ -8,7 +11,7 @@
   /* 背景色，略带暖意的米白，避免刺眼 */
   --accent-color: #8ab0ab;
   /* 主题色，低饱和度的青绿，宁静致远 */
-  --accent-hover: #709a94;
+  --accent-hover: #709a94; /* 确保悬停色符合要求 */
   /* 主题悬停色 */
   --border-color: #e0e0e0;
   /* 边框颜色 */
@@ -18,297 +21,100 @@
   /* 统一的阴影效果 */
   --font-family: 'Noto Sans TC', sans-serif;
   /* 优先使用思源黑体 */
+  --border-radius: 12px;
+  /* 统一圆角 */
 }
 
-/* --- 基础样式与布局 --- */
-body {
-  font-family: var(--font-family);
+body,
+html {
   background-color: var(--background);
+  font-family: var(--font-family);
   color: var(--primary-text);
-  margin: 0;
-  padding: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
-  line-height: 1.7;
-  /* 增加行高，提升阅读舒适度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
-  max-width: 900px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-/* --- 头部标题 --- */
-header {
-  text-align: center;
-  margin-bottom: 0rem;
-  margin-top: 1rem;
-}
-
-header h1 {
-  font-size: 2rem;
-  font-weight: 500;
-  margin: 0;
-  letter-spacing: 2px;
-  /* 增加字间距，提升设计感 */
-}
-
-header p {
-  font-size: 1rem;
-  color: var(--secondary-text);
-  margin-top: 0.5rem;
-}
-
-.upload-section {
+  position: relative; /* 为绝对定位的子元素提供上下文 */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px; /* 间距 */
-  font-size: 0.9rem;
-  color: var(--secondary-text);
-  margin-top: 0.5rem;
+  padding: 20px 20px 40px 20px;
+  min-height: 100vh;
+  width: 100%;
 }
 
-/* --- 主卡片样式 --- */
 .main-card {
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  /* 更大的圆角，更显柔和 */
-  padding: 2.5rem;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
   box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-}
-
-/* --- 内容分区 --- */
-.section {
-  margin-bottom: 2.5rem;
-}
-
-.section:last-child {
-  margin-bottom: 0;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 500;
-  margin-bottom: 1.5rem;
-  /* 标题和内容间留出更多空间 */
-  display: flex;
-  align-items: center;
-}
-
-/* 标题前的装饰性竖条，含蓄的视觉引导 */
-.section-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 18px;
-  background-color: var(--accent-color);
-  margin-right: 12px;
-  border-radius: 2px;
-}
-
-/* --- 知识源输入区 --- */
-.knowledge-source textarea {
+  padding: 10px 40px 20px 40px; /* 移除上边距 */
   width: 100%;
-  height: 150px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  font-family: inherit;
-  font-size: 0.95rem;
-  resize: vertical;
-  background-color: #f9f9f9;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  max-width: 1000px;
+  transition: all 0.3s ease;
+  border-top: none; /* 移除上边框 */
+  border-bottom: none; /* 移除下边框 */
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
 }
 
-.knowledge-source textarea:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(138, 176, 171, 0.2);
-  /* 柔和的发光效果 */
+.ant-spin-nested-loading,
+.ant-spin-container {
+  width: 100%;
+  height: 100%;
 }
 
-.knowledge-source p {
-  font-size: 0.9rem;
-  color: var(--secondary-text);
-  text-align: right;
-  margin-top: 0.5rem;
-}
-
-/* --- 题型选择区 --- */
-.question-selection {
+.form-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  /* 响应式网格布局 */
-  gap: 1.5rem;
-}
-
-.question-type {
-  background-color: #f9f9f9;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: border-color 0.3s ease;
-}
-
-.question-type:focus-within {
-  border-color: var(--accent-color);
-}
-
-.question-type label {
-  font-weight: 500;
-  color: var(--primary-text);
-}
-
-.quantity-input {
-  width: 60px;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 1rem;
-  background-color: white;
-}
-
-.quantity-input:focus {
-  outline: none;
-  border-color: var(--accent-color);
-}
-
-/* --- 操作区 --- */
-.action-bar {
-  text-align: center;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  width: 100%;
   margin-top: 2rem;
+  /* 在移入的 PageHeader 和表单之间增加一些间距 */
 }
 
-.generate-btn {
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  padding: 0.8rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  border-radius: 50px;
-  /* 胶囊形状，友好 */
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(138, 176, 171, 0.4);
-}
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .form-container {
+    grid-template-columns: 1fr;
+  }
 
-.generate-btn:hover {
-  background-color: var(--accent-hover);
-  transform: translateY(-2px);
-  /* 轻微上浮效果 */
+  .main-card {
+    padding: 0 24px 24px 24px;
+  }
 }
-
-/* --- 历史记录链接 --- */
 .history-link {
   position: absolute;
-  top: 2.5rem;
-  right: 2.5rem;
-  color: var(--secondary-text);
-  text-decoration: none;
+  top: 1.5rem;
+  right: 2rem;
   font-size: 0.95rem;
+  color: var(--secondary-text);
+  /* 默认灰色 */
+  text-decoration: none;
   transition: color 0.3s ease;
+  padding: 0.5rem 0;
+  /* 移除水平内边距 */
+  border: none;
+  /* 取消边框 */
+  background: none;
+  /* 取消背景 */
 }
 
 .history-link:hover {
   color: var(--accent-color);
 }
 
-/* --- 设置按钮 --- */
-.settings-btn {
-  position: fixed;
-  /* 固定在视窗右下角 */
-  bottom: 2rem;
-  right: 2rem;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.5rem;
-  color: var(--secondary-text);
-  cursor: pointer;
-  transition: all 0.3s ease;
+.settings-page-button {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  font-size: 24px !important;
+  color: var(--secondary-text) !important;
+  background: transparent !important;
+  border: none !important;
+  z-index: 10;
 }
 
-.settings-btn:hover {
-  color: var(--accent-color);
-  border-color: var(--accent-color);
-  transform: rotate(90deg);
-}
-
-
-/* --- 响应式设计：适应小屏幕设备 --- */
-@media (max-width: 768px) {
-  body {
-    padding: 1rem;
-    align-items: flex-start;
-    /* 移动端内容多时，从顶部开始更合适 */
-  }
-
-  .container {
-    gap: 1.5rem;
-  }
-
-  .main-card {
-    padding: 1.5rem;
-  }
-
-  header h1 {
-    font-size: 1.8rem;
-  }
-
-  header p {
-    font-size: 0.95rem;
-  }
-
-  .section {
-    margin-bottom: 2rem;
-  }
-
-  .section-title {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-  }
-
-  .knowledge-source textarea {
-    height: 120px;
-  }
-
-  .question-selection {
-    grid-template-columns: 1fr;
-    /* 在小屏幕上改为单列显示 */
-    gap: 1rem;
-  }
-
-  .history-link {
-    position: static;
-    /* 改变定位方式 */
-    display: block;
-    text-align: center;
-    margin-top: 2rem;
-    margin-bottom: -1rem;
-    /* 抵消一些下方间距 */
-  }
-
-  .settings-btn {
-    bottom: 1rem;
-    right: 1rem;
-  }
+.settings-page-button:hover {
+  color: var(--accent-color) !important;
 }

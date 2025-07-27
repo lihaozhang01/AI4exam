@@ -51,4 +51,4 @@ async def read_root():
 if __name__ == "__main__":
     # 使用 uvicorn 來運行 FastAPI 應用
     # host="0.0.0.0" 使其可以在局域網內被訪問
-    uvicorn.run(app, host="0.e0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

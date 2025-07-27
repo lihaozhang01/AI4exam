@@ -1,0 +1,25 @@
+.action-buttons-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 20px;
+    position: relative; /* For positioning the settings icon */
+}
+
+.generate-button {
+    min-width: 200px;
+    height: 48px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: none;
+    background-color: #8ab0ab;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.generate-button:hover {
+    background-color: #709a94 !important; /* 主题悬停色 */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); /* 增强阴影 */
+}

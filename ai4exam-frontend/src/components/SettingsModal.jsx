@@ -6,7 +6,7 @@ import axios from 'axios';
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const SettingsModal = ({ isVisible, onOk, onCancel }) => {
+const SettingsModal = ({ isOpen, onOk, onCancel }) => {
   const [form] = Form.useForm();
   const [apiKey, setApiKey] = useState('');
   const [apiProvider, setApiProvider] = useState('google');
@@ -18,7 +18,7 @@ const SettingsModal = ({ isVisible, onOk, onCancel }) => {
     const storedApiKey = localStorage.getItem('api_key');
     const storedProvider = localStorage.getItem('api_provider');
 
-    if (isVisible) {
+    if (isOpen) {
       form.setFieldsValue({
         apiKey: storedApiKey || '',
         apiProvider: storedProvider || 'google',
@@ -40,7 +40,7 @@ const SettingsModal = ({ isVisible, onOk, onCancel }) => {
         singleQuestionFeedbackPrompt: localStorage.getItem('single_question_feedback_prompt') || ''
       });
     }
-  }, [isVisible]);
+  }, [isOpen]);
 
   const handleOk = async () => {
     try {
@@ -89,7 +89,7 @@ const SettingsModal = ({ isVisible, onOk, onCancel }) => {
   return (
     <Modal
       title="设置"
-      visible={isVisible}
+      open={isOpen}
       onOk={handleOk}
       onCancel={onCancel}
       footer={[

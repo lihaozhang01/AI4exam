@@ -1,0 +1,195 @@
+/* Universal Form Section Styles */
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+/* KnowledgeSourceForm Styles */
+.knowledge-source-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.source-textarea {
+  background-color: var(--background-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  font-size: 14px !important;
+  resize: vertical !important;
+  min-height: 120px !important;
+}
+
+.divider-text {
+  text-align: center;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+.divider-text:not(:empty)::before {
+  margin-right: .5em;
+}
+.divider-text:not(:empty)::after {
+  margin-left: .5em;
+}
+
+.upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px; /* 减小内边距 */
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: var(--background-color);
+  min-height: 100px; /* 减小最小高度 */
+}
+
+.upload-area.drag-over,
+.upload-area:hover {
+  border-color: var(--primary-color);
+  background-color: #eef4fc;
+}
+
+.upload-icon {
+  font-size: 24px; /* 减小图标大小 */
+  color: var(--primary-color);
+  margin-bottom: 8px; /* 减小下边距 */
+}
+
+.upload-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.upload-text-small {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.file-info {
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* TestConfigForm Styles */
+.test-config-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+}
+
+.config-item > label {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.config-textarea {
+  background-color: var(--background-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  font-size: 14px !important;
+  resize: vertical !important;
+}
+
+.config-segmented .ant-segmented-item {
+    border-radius: 6px !important;
+    transition: all 0.3s ease;
+}
+
+.config-segmented .ant-segmented-item-selected {
+    background-color: #8ab0ab !important; /* A strong teal color */
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.config-segmented.difficulty-easy .ant-segmented-item-selected {
+    background-color: #8ab0ab !important;
+}
+
+.config-segmented.difficulty-medium .ant-segmented-item-selected {
+    background-color: #709a94 !important; /* A slightly darker teal */
+}
+
+.config-segmented.difficulty-hard .ant-segmented-item-selected {
+    background-color: #567d79 !important; /* An even darker teal */
+}
+
+.config-segmented .ant-segmented-item:hover:not(.ant-segmented-item-selected) {
+    background-color: #e6f4f1 !important; /* A very light teal for hover */
+}
+
+.question-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: 8px;
+}
+
+.slider-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.config-slider {
+  flex-grow: 1;
+  margin: 0 !important;
+}
+
+.slider-value {
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.title-decorator {
+  display: inline-block;
+  width: 0.25em;
+  height: 0.8em;
+  background-color: #8ab0ab;
+  margin-right: 0.5em;
+  vertical-align: middle;
+  border-radius: 2px;
+}
