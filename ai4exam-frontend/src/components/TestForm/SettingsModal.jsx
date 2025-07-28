@@ -72,7 +72,7 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
       await axios.post('http://127.0.0.1:8000/test-connectivity', {}, {
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': values.apiKey,
+          'X-Api-Key': values.apiKey,
           'X-Provider': values.apiProvider
         }
       });
