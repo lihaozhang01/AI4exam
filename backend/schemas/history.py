@@ -7,7 +7,10 @@ import datetime
 class TestPaper(BaseModel):
     id: int
     name: str
+    description: Optional[str] = None
     created_at: datetime.datetime
+    total_objective_questions: int = 0
+    total_essay_questions: int = 0
 
     class Config:
         from_attributes = True

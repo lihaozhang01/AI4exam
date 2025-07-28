@@ -71,7 +71,9 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
     db_result = models.TestPaperResult(
         test_paper_id=test_id,
         user_answers=user_answers_dicts,
-        grading_results=grading_results_dicts
+        grading_results=grading_results_dicts,
+        correct_objective_questions=correct_objective_count,
+        # essay_score can be calculated and saved later
     )
 
     db.add(db_result)

@@ -6,9 +6,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # 從 models 導入資料庫相關設定
-from models import Base, engine
+from models import Base
+from database import engine
 # 從 routers 導入所有路由器模組
-from routers import tests, grading, history, utils
+from routers import tests, grading, history, utils, history_test_papers
 
 # --- App and Configuration Setup ---
 
@@ -38,7 +39,8 @@ app.add_middleware(
 # 將不同模組的路由器包含到主應用中
 app.include_router(tests.router)
 app.include_router(grading.router)
-app.include_router(history.router)
+app.include_router(history.router, prefix="/history")
+app.include_router(history_test_papers.router, prefix="/history_test_papers")
 app.include_router(utils.router)
 
 @app.get("/", tags=["Root"])

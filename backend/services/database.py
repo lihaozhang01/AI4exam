@@ -20,15 +20,21 @@ def create_test_paper(db: Session, source_content: str, ai_response: dict) -> mo
     """Creates a test paper record in the database, including a generated name."""
     # 優先從AI響應中獲取標題，否則生成預設標題
     paper_name = ai_response.get('title', f"AI生成的試卷 - {source_content[:20]}...")
+    questions_data = ai_response.get('questions', [])
+
+    # 計算客觀題和主觀題的數量
+    total_objective = sum(1 for q in questions_data if q.get('type') in GRADING_STRATEGIES)
+    total_essay = sum(1 for q in questions_data if q.get('type') == 'essay')
 
     db_test_paper = models.TestPaper(
         name=paper_name,
-        source_content=source_content
+        source_content=source_content,
+        total_objective_questions=total_objective,
+        total_essay_questions=total_essay
     )
     db.add(db_test_paper)
 
     # 將AI生成的問題添加到資料庫
-    questions_data = ai_response.get('questions', [])
     for q_data in questions_data:
         db_question = models.DBQuestion(
             test_paper=db_test_paper, # Link back to the paper
@@ -57,11 +63,16 @@ def get_test_result_by_id(db: Session, result_id: int) -> models.TestPaperResult
         raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
     return result
 
+from sqlalchemy.orm import defer, subqueryload
+
 def get_all_test_results(db: Session):
-    """Fetches all test paper results and calculates statistics on the fly."""
+    """Fetches all test paper results, deferring large fields to improve performance."""
     results = (
         db.query(models.TestPaperResult)
-        .options(joinedload(models.TestPaperResult.test_paper).subqueryload(models.TestPaper.questions))
+        .options(
+            joinedload(models.TestPaperResult.test_paper)
+            .defer(models.TestPaper.source_content)
+        )
         .order_by(models.TestPaperResult.created_at.desc())
         .all()
     )
@@ -69,22 +80,18 @@ def get_all_test_results(db: Session):
     # 為每条結果動態計算統計數據
     for result in results:
         test_paper = result.test_paper
-        if not test_paper or not test_paper.questions:
+        if not test_paper:
             result.total_objective_questions = 0
             result.total_essay_questions = 0
             result.correct_objective_questions = 0
             continue
 
-        # 統計題目類型數量
-        total_objective = sum(1 for q in test_paper.questions if q.question_type in GRADING_STRATEGIES)
-        total_essay = sum(1 for q in test_paper.questions if q.question_type == 'essay')
+        # 直接從 test_paper 對象獲取預先計算好的值
+        result.total_objective_questions = test_paper.total_objective_questions
+        result.total_essay_questions = test_paper.total_essay_questions
 
         # 統計客觀題正確數
         correct_objective = sum(1 for grade in result.grading_results if isinstance(grade, dict) and grade.get('is_correct'))
-        
-        # 將統計結果附加到 result 物件上，這樣 Pydantic 可以使用它們
-        result.total_objective_questions = total_objective
-        result.total_essay_questions = total_essay
         result.correct_objective_questions = correct_objective
 
     return results

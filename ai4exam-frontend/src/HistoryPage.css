@@ -110,6 +110,11 @@ html {
   margin-bottom: 1.5rem;
 }
 
+/* 为有三项数据的提交卡片特别调整 */
+.submission-card .card-stats {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .stat {
   text-align: center;
 }

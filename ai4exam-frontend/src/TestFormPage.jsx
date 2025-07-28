@@ -4,11 +4,11 @@ import { message, Spin, Button, Tooltip } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
-import SettingsModal from './components/SettingsModal';
-import PageHeader from './components/PageHeader';
-import KnowledgeSourceForm from './components/KnowledgeSourceForm';
-import TestConfigForm from './components/TestConfigForm';
-import ActionButtons from './components/ActionButtons';
+import SettingsModal from './components/TestForm/SettingsModal';
+import PageHeader from './components/TestForm/PageHeader';
+import KnowledgeSourceForm from './components/TestForm/KnowledgeSourceForm';
+import TestConfigForm from './components/TestForm/TestConfigForm';
+import ActionButtons from './components/TestForm/ActionButtons';
 import './TestFormPage.css';
 
 const TestFormPage = () => {

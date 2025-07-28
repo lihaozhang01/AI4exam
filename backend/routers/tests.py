@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 import services
 import schemas
-from models import get_db
+from database import get_db
 from dependencies import configure_genai
 
 router = APIRouter(

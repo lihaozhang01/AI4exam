@@ -7,10 +7,12 @@ Base = declarative_base()
 class TestPaper(Base):
     __tablename__ = 'test_papers'
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=True)  # 试卷名称
+    name = Column(String(255), nullable=True, index=True)  # 试卷名称
+    total_objective_questions = Column(Integer, default=0)  # 客观题总数
+    total_essay_questions = Column(Integer, default=0)  # 主观题总数
 
     source_content = Column(Text)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     questions = relationship('DBQuestion', back_populates='test_paper', cascade="all, delete-orphan")
     results = relationship('TestPaperResult', back_populates='test_paper', cascade="all, delete-orphan")
 
@@ -20,9 +22,10 @@ class TestPaperResult(Base):
     test_paper_id = Column(Integer, ForeignKey('test_papers.id'))
     user_answers = Column(JSON) # Store user's answers
     grading_results = Column(JSON) # Store grading results
+    correct_objective_questions = Column(Integer)  # 客观题正确数
     overall_feedback = Column(Text, nullable=True) # Store overall AI feedback
     question_feedbacks = Column(JSON, nullable=True) # Store individual question AI feedbacks
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     test_paper = relationship('TestPaper', back_populates='results')
 
 
@@ -35,15 +38,3 @@ class DBQuestion(Base):
     options = Column(JSON)
     correct_answer = Column(JSON)
     test_paper = relationship('TestPaper', back_populates='questions')
-
-# 数据库连接可以保留在这里，或者移动到单独的 database.py 文件
-DATABASE_URL = "sqlite:///./test.db" # 使用相对路径更具可移植性
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
