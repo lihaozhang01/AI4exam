@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Spin, Alert, Button, Popconfirm, message, Input, Select, Modal } from 'antd';
-import { DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
+import { Spin, Alert, Button, Popconfirm, message, Input, Select, Modal, Switch, Tooltip } from 'antd';
+import { DeleteOutlined, EyeOutlined, SearchOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 import './HistoryPage.css'; // 引入新的CSS文件
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
-const { Option } = Select;
+
 
 const StatCard = ({ value, label }) => (
   <div className="stat">
@@ -24,10 +24,11 @@ function HistoryPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' or 'papers'
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [order, setOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState('created_at'); // 'created_at' or 'name'
+  const [order, setOrder] = useState('desc'); // 'asc' or 'desc'
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState(null);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const navigate = useNavigate();
 
   const fetchHistory = useCallback(async (forceRefresh = false) => {
@@ -78,18 +79,18 @@ function HistoryPage() {
 
   // 切换 tab 或排序条件时触发数据获取
   useEffect(() => {
-    fetchHistory();
-  }, [activeTab, sortBy]);
+    fetchHistory(true); // 强制刷新以获取新排序的数据
+  }, [activeTab, sortBy, order]);
 
-  // 按下回车键时手动触发搜索（强制刷新）
+  // 手动触发搜索（强制刷新）
   const handleSearch = () => {
-    // 清空当前tab的缓存以强制重新获取
     if (activeTab === 'submissions') {
       setSubmissions([]);
     } else {
       setPapers([]);
     }
     fetchHistory(true);
+    setIsSearchVisible(false); // 搜索后隐藏输入框
   };
 
   const handleDelete = async (id, deletePaper = false) => {
@@ -141,38 +142,63 @@ function HistoryPage() {
         <p>在这里回顾您所有的提交记录和试卷模板。</p>
       </header>
 
+      <div className="controls-container">
+        <div className="search-container">
+          <div className={`search-wrapper ${isSearchVisible ? 'active' : ''}`}>
+            <Input
+              placeholder="按试卷名称搜索..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onPressEnter={handleSearch}
+              className="search-input"
+            />
+            <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />} className="search-button" />
+          </div>
+          <Tooltip title="搜索">
+            <Button
+              shape="circle"
+              icon={<SearchOutlined />}
+              onClick={() => setIsSearchVisible(!isSearchVisible)}
+              className="control-icon search-icon"
+            />
+          </Tooltip>
+        </div>
+
+        <div className="sort-controls">
+          <div className="sort-switch-group">
+            <span className="sort-label">排序字段</span>
+            <Switch
+              checkedChildren="名称"
+              unCheckedChildren="日期"
+              checked={sortBy === 'name'}
+              onChange={(checked) => setSortBy(checked ? 'name' : 'created_at')}
+            />
+          </div>
+          <div className="sort-switch-group">
+            <span className="sort-label">排序方式</span>
+            <Switch
+              checkedChildren={<SortAscendingOutlined />}
+              unCheckedChildren={<SortDescendingOutlined />}
+              checked={order === 'asc'}
+              onChange={(checked) => setOrder(checked ? 'asc' : 'desc')}
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="tab-controls">
         <Button
-          type={activeTab === 'submissions' ? 'primary' : 'default'}
+          className={activeTab === 'submissions' ? 'active' : ''}
           onClick={() => setActiveTab('submissions')}
         >
           提交历史
         </Button>
         <Button
-          type={activeTab === 'papers' ? 'primary' : 'default'}
+          className={activeTab === 'papers' ? 'active' : ''}
           onClick={() => setActiveTab('papers')}
         >
           试卷库
         </Button>
-      </div>
-
-      <div className="history-controls">
-        <Input
-          placeholder="按试卷名称搜索..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onPressEnter={handleSearch} // 修改为手动触发函数
-          style={{ width: 240, marginRight: 8 }}
-          prefix={<SearchOutlined />}
-        />
-        <Select value={sortBy} onChange={setSortBy} style={{ width: 120, marginRight: 8 }}>
-          <Option value="created_at">按日期</Option>
-          <Option value="name">按名称</Option>
-        </Select>
-        <Select value={order} onChange={setOrder} style={{ width: 120 }}>
-          <Option value="desc">降序</Option>
-          <Option value="asc">升序</Option>
-        </Select>
       </div>
 
       {loading && <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}><Spin size="large" tip="加载中..." /></div>}
@@ -213,59 +239,61 @@ function HistoryPage() {
             ))}
           </div>
         ) : (
-          <div className="empty-state"><p>暂无试卷模板</p></div>
+          <div className="empty-state"><p>暂无试卷模板，快去生成一份吧！</p></div>
         )
       )}
 
-      {activeTab === 'submissions' && !loading && !error && submissions.length > 0 ? (
-        <div className="history-grid"> {/* 使用 grid 布局以保持一致性 */}
-          {submissions.map(item => (
-            <div key={item.id} className="history-card submission-card">
-              <div className="card-content">
-                <div className="card-header">
-                  <h2 onClick={() => navigate(`/history/${item.id}`)}>
-                    {item.test_paper?.name || `提交记录 #${item.id}`}
-                  </h2>
-                  <p className="card-date">提交于: {new Date(item.created_at).toLocaleString()}</p>
+      {activeTab === 'submissions' && !loading && !error && (
+        submissions.length > 0 ? (
+          <div className="history-grid">
+            {submissions.map(item => (
+              <div key={item.id} className="history-card submission-card">
+                <div className="card-content">
+                  <div className="card-header">
+                    <h2 onClick={() => navigate(`/history/${item.id}`)}>
+                      {item.test_paper?.name || `提交记录 #${item.id}`}
+                    </h2>
+                    <p className="card-date">提交于: {new Date(item.created_at).toLocaleString()}</p>
+                  </div>
+                  <div className="card-stats">
+                    <StatCard
+                      label="客观题正确率"
+                      value={`${item.correct_objective_questions ?? 'N/A'} / ${item.test_paper?.total_objective_questions || 0}`}
+                    />
+                    <StatCard 
+                      label="论述题总数" 
+                      value={`${item.test_paper?.total_essay_questions ?? 'N/A'}`} 
+                    />
+                  </div>
                 </div>
-                <div className="card-stats">
-                  <StatCard
-                    label="客观题正确率"
-                    value={`${item.correct_objective_questions ?? 'N/A'} / ${item.test_paper?.total_objective_questions || 0}`}
-                  />
-                  <StatCard 
-                    label="论述题总数" 
-                    value={`${item.test_paper?.total_essay_questions ?? 'N/A'}`} 
-                  />
-                </div>
-              </div>
-              <div className="card-actions">
-                <Button type="text" icon={<EyeOutlined />} onClick={() => navigate(`/history/${item.id}`)}>
-                  查看
-                </Button>
-                <Popconfirm
-                  title="确定要删除这份提交记录吗？"
-                  description="此操作不可撤销。"
-                  onConfirm={() => handleAttemptDelete(item)}
-                  okText="确认删除"
-                  cancelText="取消"
-                >
-                  <Button type="link" danger icon={<DeleteOutlined />}>
-                    删除
+                <div className="card-actions">
+                  <Button type="text" icon={<EyeOutlined />} onClick={() => navigate(`/history/${item.id}`)}>
+                    查看
                   </Button>
-                </Popconfirm>
+                  <Popconfirm
+                    title="确定要删除这份提交记录吗？"
+                    description="此操作不可撤销。"
+                    onConfirm={() => handleAttemptDelete(item)}
+                    okText="确认删除"
+                    cancelText="取消"
+                  >
+                    <Button type="link" danger icon={<DeleteOutlined />}>
+                      删除
+                    </Button>
+                  </Popconfirm>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : !loading && !error && (
-        <div className="no-history-container">
-          <h2>暂无历史记录</h2>
-          <p>当您生成第一份试卷后，这里将记录您的学习旅程。</p>
-          <Link to="/" className="go-to-generate-btn">
-            去生成第一份试卷
-          </Link>
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="no-history-container">
+            <h2>暂无提交记录</h2>
+            <p>完成一次答题后，您的提交记录会出现在这里。</p>
+            <Link to="/" className="go-to-generate-btn">
+              去生成试卷并答题
+            </Link>
+          </div>
+        )
       )}
 
       <Modal

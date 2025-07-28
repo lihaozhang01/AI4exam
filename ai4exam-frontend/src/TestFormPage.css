@@ -19,7 +19,7 @@
   /* 卡片背景色 */
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   /* 统一的阴影效果 */
-  --font-family: 'Noto Sans TC', sans-serif;
+  --font-family: 'Inter', 'Noto Sans SC', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   /* 优先使用思源黑体 */
   --border-radius: 12px;
   /* 统一圆角 */
@@ -117,4 +117,52 @@ html {
 
 .settings-page-button:hover {
   color: var(--accent-color) !important;
+}
+
+/* 彩蛋样式 */
+.easter-egg-container {
+  position: fixed;
+  bottom: 10px;
+  left: 20px; /* 调整位置，避免与设置按钮重叠 */
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease-in-out;
+}
+
+.snow-leopard-icon {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.easter-egg-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: 100%; /* 显示在图标上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--accent-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: visibility 0s 0.2s, opacity 0.2s ease;
+}
+
+.easter-egg-container:hover .snow-leopard-icon {
+  opacity: 1;
+  animation: firework 0.6s ease-in-out forwards;
+}
+
+.easter-egg-container:hover .easter-egg-text {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+@keyframes firework {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }

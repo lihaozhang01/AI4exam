@@ -72,7 +72,7 @@ const TestConfigForm = ({ config, onConfigChange }) => {
               <span className="slider-label">{config.label}</span>
               <Slider
                 min={0}
-                max={10} // 将最大值改为10
+                max={20} // 将最大值改为10
                 value={questionQuantities[type]}
                 onChange={(value) => handleQuantityChange(type, value)}
                 className="config-slider"

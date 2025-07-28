@@ -10,6 +10,7 @@ import KnowledgeSourceForm from './components/TestForm/KnowledgeSourceForm';
 import TestConfigForm from './components/TestForm/TestConfigForm';
 import ActionButtons from './components/TestForm/ActionButtons';
 import './TestFormPage.css';
+import snowLeopardIcon from './assets/knowledge_bao.png'; // 导入图片
 
 const TestFormPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -153,6 +154,14 @@ const TestFormPage = () => {
         onOk={() => setIsModalOpen(false)}
         onCancel={() => setIsModalOpen(false)}
       />
+
+      {/* 彩蛋：知识雪豹 */}
+      <div className="easter-egg-container">
+        <div className="snow-leopard-icon">
+          <img src={snowLeopardIcon} alt="知识学爆" style={{ width: '100px', height: '100px' }} />
+        </div>
+        <span className="easter-egg-text">知识学爆</span>
+      </div>
     </div>
   );
 };
