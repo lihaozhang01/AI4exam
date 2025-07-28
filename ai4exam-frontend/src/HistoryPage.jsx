@@ -119,13 +119,7 @@ function HistoryPage() {
         setDeletingItemId(item.id);
         setIsModalVisible(true);
       } else {
-        Popconfirm.confirm({
-          title: '确定要删除这份提交记录吗？',
-          content: '此操作不可撤销。',
-          onConfirm: () => handleDelete(item.id, false),
-          okText: '确认删除',
-          cancelText: '取消',
-        });
+        handleDelete(item.id, false);
       }
     } else { // 'papers' tab
       handleDelete(item.id);
@@ -249,9 +243,17 @@ function HistoryPage() {
                 <Button type="text" icon={<EyeOutlined />} onClick={() => navigate(`/history/${item.id}`)}>
                   查看
                 </Button>
-                <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleAttemptDelete(item)}>
-                  删除
-                </Button>
+                <Popconfirm
+                  title="确定要删除这份提交记录吗？"
+                  description="此操作不可撤销。"
+                  onConfirm={() => handleAttemptDelete(item)}
+                  okText="确认删除"
+                  cancelText="取消"
+                >
+                  <Button type="link" danger icon={<DeleteOutlined />}>
+                    删除
+                  </Button>
+                </Popconfirm>
               </div>
             </div>
           ))}
