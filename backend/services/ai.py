@@ -11,7 +11,7 @@ import schemas
 import models
 from prompts import (
     GENERATE_TEST_PROMPT, EVALUATE_ESSAY_PROMPT, 
-    OVERALL_FEEDBACK_PROMPT, SINGLE_QUESTION_FEEDBACK_PROMPT
+    OVERALL_FEEDBACK_PROMPT, SINGLE_QUESTION_FEEDBACK_PROMPT, GENERATE_STREAMABLE_TEST_PROMPT
 )
 
 # --- Reusable Utilities ---
@@ -25,6 +25,77 @@ def _extract_json_from_ai_response(ai_text: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         print(f"JSON parsing failed. String was: {json_str[:500]}...")
         raise HTTPException(status_code=500, detail=f"AI returned malformed JSON: {e}")
+
+# --- Streaming AI Service ---
+async def generate_test_stream_from_ai(
+    knowledge_content: str, 
+    config: schemas.GenerateTestConfig, 
+    generation_model: str = None,
+    generation_prompt: str = None
+):
+    """
+    使用流式响应逐步生成试卷，并通过智能解析器实时处理数据。
+    """
+    # 选择模型和prompt
+    model_name = generation_model or 'gemini-1.5-flash'
+    system_prompt = generation_prompt or GENERATE_STREAMABLE_TEST_PROMPT['system_prompt']
+    
+    # 构建完整的prompt
+    prompt = f"{system_prompt}\n\n{GENERATE_STREAMABLE_TEST_PROMPT['format_instructions']}".format(
+        knowledge_content=knowledge_content,
+        config_json=config.model_dump_json(indent=2)
+    )
+
+    # 初始化模型并开始流式生成
+    try:
+        model = genai.GenerativeModel(model_name)
+        stream = await model.generate_content_async(prompt, stream=True)
+    except Exception as e:
+        # 如果模型初始化或API调用失败，立即停止并报告错误
+        error_message = f"Error initializing or calling AI model: {e}"
+        print(error_message)
+        yield f"data: {json.dumps({'error': error_message})}\n\n" 
+        return
+
+    # --- 智能解析器 ---
+    buffer = ""
+    meta_yielded = False
+    chunk_count = 0
+    async for chunk in stream:
+        chunk_count += 1
+        buffer += chunk.text
+
+        # --- 实时解析和产生事件 ---
+        # 尝试解析元数据
+        if not meta_yielded:
+            meta_end_marker = "%%END_OF_META%%"
+            if meta_end_marker in buffer:
+                meta_part, buffer = buffer.split(meta_end_marker, 1)
+                meta_json_str = meta_part.strip().replace("```json", "").replace("```", "").strip()
+                try:
+                    meta_data = json.loads(meta_json_str)
+                    yield f"data: {json.dumps({'type': 'metadata', 'content': meta_data})}\n\n"
+                    meta_yielded = True
+                except json.JSONDecodeError:
+                    print(f"---[AI_SERVICE_DEBUG]---: Metadata decode error, putting back the chunk.")
+                    buffer = meta_part + meta_end_marker + buffer # 解析失败，放回去
+
+        # 尝试解析问题
+        question_end_marker = "%%END_OF_QUESTION%%"
+        while question_end_marker in buffer:
+            question_part, buffer = buffer.split(question_end_marker, 1)
+            question_json_str = question_part.strip().replace("```json", "").replace("```", "").strip()
+            if not question_json_str:
+                continue
+
+            try:
+                question_data = json.loads(question_json_str)
+                yield f"data: {json.dumps({'type': 'question', 'content': question_data})}\n\n"
+                
+            except json.JSONDecodeError:
+                print(f"---[AI_SERVICE_DEBUG]---: Question decode error, putting back the chunk.")
+                buffer = question_part + question_end_marker + buffer # 解析失败，放回去
+                break  # 等待下一个数据块
 
 # --- AI Interaction Services ---
 

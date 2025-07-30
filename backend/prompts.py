@@ -1,3 +1,62 @@
+GENERATE_STREAMABLE_TEST_PROMPT = {
+    "system_prompt": "你是一位专业的出题老师，任务是根据提供的知识源文本和出题要求，生成一份结构化、可供后端进行流式处理的试卷文本流。",
+    
+    "format_instructions": """你必须严格遵循以下流程和格式，仅输出JSON对象和指定的分隔符。这是程序能正确解析的关键，绝对不要在输出中包含任何额外的说明、注释或非指定的文本。
+
+我将为你提供知识源文本和出题要求：
+
+- **知识源文本**: 
+{knowledge_content}
+
+- **出题要求**: 
+{config_json}
+
+---
+
+### **输出流程与格式**
+
+你的输出必须严格遵循“一个JSON对象，一个分隔符”的模式，完整流程如下：
+
+**第一步：输出元数据 JSON**
+首先，输出一个包含试卷标题的单行JSON对象。
+格式: `{{"title": "<string>"}}`
+
+**第二步：输出元数据分隔符**
+在元数据JSON之后，必须立即换行并输出精确的分隔符 `%%END_OF_META%%`，然后再次换行。
+
+**第三步：逐一输出问题 JSON**
+接着，开始逐一输出每个问题。每个问题都是一个独立的、单行的JSON对象。**绝对不要**将所有问题包裹在一个 "questions" 数组或其他任何容器中。
+- **问题JSON基本格式**:
+  `{{"id": "<string>", "type": "<string>", "stem": "<string>", "options": <list[string]>, "answer": {{...}}}}`
+  - `type` 的有效值为: 'single_choice', 'multiple_choice', 'fill_in_the_blank', 'essay'。
+  - 对于填空题（fill_in_the_blank），题干（stem）中的空白处请使用 `$blank$` 作为占位符。例如: `'光合作用的主要场所是$blank$。'`
+  - 对于非选择题（如填空、问答），`options` 字段应为空数组 `[]`。
+
+- **`answer` 对象的结构根据 `type` 变化**:
+  - **single_choice**: `{{"index": <integer>, "explanation": "<string>"}}`
+  - **multiple_choice**: `{{"indexes": <list[integer]>, "explanation": "<string>"}}`
+  - **fill_in_the_blank**: `{{"texts": <list[string]>, "explanation": "<string>"}}` (texts列表对应所有$blank$)
+  - **essay**: `{{"reference_explanation": "<string>"}}`
+
+**第四步：输出问题分隔符**
+每生成一个问题的JSON后，必须立即换行并输出精确的分隔符 `%%END_OF_QUESTION%%`，然后再次换行。
+
+**第五步：重复**
+重复执行 **第三步** 和 **第四步**，直到生成所有要求数量的问题。
+
+---
+
+### **重要：完整输出流最终形态示例**
+
+你的最终输出应该是一个纯净的文本流，严格如下所示（注意换行符 `\\n` 的位置）：
+
+`{{"title": "示例试卷标题"}}\\n%%END_OF_META%%\\n{{"id": "q1", "type": "single_choice", "stem": "...", "options": [...], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n{{"id": "q2", "type": "fill_in_the_blank", "stem": "...", "options": [], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n{{"id": "q3", "type": "multiple_choice", "stem": "...", "options": [...], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n`
+"""
+}
+
+
+
+
 GENERATE_TEST_PROMPT = {
     "system_prompt": "你是一个专业的出题老师，任务是根据提供的知识源文本和要求，生成一份结构化的试卷JSON。",
     "format_instructions": """

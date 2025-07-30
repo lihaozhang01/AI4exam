@@ -1,0 +1,69 @@
+:root {
+  --primary-text: #333;
+  --secondary-text: #666;
+  --background: #fdfdfc;
+  --accent-color: #8ab0ab;
+  --accent-hover: #709a94;
+  --border-color: #e0e0e0;
+  --card-bg: #ffffff;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --font-family: 'Inter', 'Noto Sans SC', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --border-radius: 12px;
+}
+
+.streaming-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: var(--background);
+  font-family: var(--font-family);
+}
+
+.streaming-page-card-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.streaming-page-arrow {
+  font-size: 48px;
+  color: var(--secondary-text);
+  cursor: pointer;
+  padding: 0 20px;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.streaming-page-arrow:hover {
+  color: var(--accent-color);
+}
+
+.streaming-page-arrow-disabled {
+  color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.streaming-page-question-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.streaming-page-submit-button {
+  margin-top: 20px;
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.streaming-page-submit-button:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}

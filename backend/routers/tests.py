@@ -2,6 +2,7 @@
 
 import urllib.parse
 from typing import Optional
+from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Header
 from sqlalchemy.orm import Session
 
@@ -54,6 +55,38 @@ async def generate_test(
     ]
 
     return schemas.GenerateTestResponse(test_id=str(db_test_paper.id), questions=questions_data)
+
+
+@router.post("/generate-stream-test")
+async def generate_stream_test(
+    db: Session = Depends(get_db),
+    source_file: Optional[UploadFile] = File(None),
+    source_text: Optional[str] = Form(None),
+    config_json: str = Form(...),
+    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
+    _: None = Depends(configure_genai)
+):
+    if not source_file and not source_text:
+        raise HTTPException(status_code=400, detail="Either source_file or source_text must be provided.")
+
+    config = schemas.GenerateTestConfig.model_validate_json(config_json)
+    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
+    file_content = (await source_file.read()).decode('utf-8') if source_file else ""
+    text_content = source_text if source_text else ""
+    
+    knowledge_content = ""
+    if file_content:
+        knowledge_content += f"以下是文件内容：\n{file_content}\n"
+    if text_content:
+        knowledge_content += f"以下是用户输入内容：\n{text_content}\n"
+    knowledge_content = knowledge_content.strip()
+
+    stream_generator = services.generate_test_stream_from_ai(
+        knowledge_content, config, generation_model, decoded_prompt
+    )
+
+    return StreamingResponse(stream_generator, media_type="text/event-stream")
 
 
 @router.get("/test-papers/{test_id}", response_model=schemas.GenerateTestResponse)

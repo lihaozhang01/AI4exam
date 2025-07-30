@@ -5,7 +5,8 @@ from .ai import (
     generate_test_from_ai,
     get_overall_feedback_from_ai,
     get_single_question_feedback_from_ai,
-    evaluate_essay_with_ai
+    evaluate_essay_with_ai,
+    generate_test_stream_from_ai
 )
 
 # --- 從 database.py 匯出 ---
@@ -41,6 +42,7 @@ __all__ = [
     'get_overall_feedback_from_ai',
     'get_single_question_feedback_from_ai',
     'evaluate_essay_with_ai',
+    'generate_test_stream_from_ai',
 
     # Database Services
     'get_test_paper_by_id',
