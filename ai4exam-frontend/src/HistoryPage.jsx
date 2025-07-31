@@ -56,7 +56,7 @@ function HistoryPage() {
     });
 
     try {
-      console.log(`正在从 ${url}?${params.toString()} 获取数据`);
+      
       const response = await fetch(`${url}?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();

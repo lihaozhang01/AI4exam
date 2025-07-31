@@ -15,7 +15,7 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
   const [prompts, setPrompts] = useState({ generation: '', evaluation: '' });
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('api_key');
+    const storedApiKey = localStorage.getItem('apiKey');
     const storedProvider = localStorage.getItem('api_provider');
 
     if (isOpen) {
@@ -24,6 +24,7 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
         apiProvider: storedProvider || 'google',
         generationModel: localStorage.getItem('generation_model') || 'gemini-2.5-pro',
         evaluationModel: localStorage.getItem('evaluation_model') || 'gemini-2.5-pro',
+        testPaperStyle: localStorage.getItem('test_paper_style') || 'classic',
       });
       setApiKey(storedApiKey || '');
       setApiProvider(storedProvider || 'google');
@@ -45,10 +46,11 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      localStorage.setItem('api_key', values.apiKey);
+      localStorage.setItem('apiKey', values.apiKey);
       localStorage.setItem('api_provider', values.apiProvider);
       localStorage.setItem('generation_model', values.generationModel);
       localStorage.setItem('evaluation_model', values.evaluationModel);
+      localStorage.setItem('test_paper_style', values.testPaperStyle);
       localStorage.setItem('generation_prompt', values.generationPrompt);
       localStorage.setItem('evaluation_prompt', values.evaluationPrompt);
       localStorage.setItem('overall_feedback_prompt', values.overallFeedbackPrompt);
@@ -128,6 +130,12 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
               ) : (
                 <Input placeholder="请输入模型ID，例如 Qwen/Qwen2-7B-Instruct" />
               )}
+            </Form.Item>
+            <Form.Item name="testPaperStyle" label="试卷样式">
+              <Select placeholder="选择试卷样式">
+                <Option value="classic">传统模式</Option>
+                <Option value="card">卡片模式</Option>
+              </Select>
             </Form.Item>
             <Form.Item name="evaluationModel" label="点评模型">
               {['google'].includes(apiProvider) ? (

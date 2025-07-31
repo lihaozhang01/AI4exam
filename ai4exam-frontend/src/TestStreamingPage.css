@@ -1,69 +1,80 @@
-:root {
-  --primary-text: #333;
-  --secondary-text: #666;
-  --background: #fdfdfc;
-  --accent-color: #8ab0ab;
-  --accent-hover: #709a94;
-  --border-color: #e0e0e0;
-  --card-bg: #ffffff;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --font-family: 'Inter', 'Noto Sans SC', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --border-radius: 12px;
+/* TestStreamingPage.css */
+
+.test-streaming-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  /* 使页面占满整个视口高度 */
+  padding: 24px;
 }
 
-.streaming-page-container {
+.test-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* ✅ 新增样式：题目卡片显示区域 */
+.question-display-area {
+  flex-grow: 1;
+  /* 让此区域占据剩余空间 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  /* 防止卡片动画溢出 */
+  padding: 20px 0;
+}
+
+.question-display-area .ant-card {
+  width: 100%;
+  max-width: 800px;
+  /* 您可以根据需要调整最大宽度 */
+  min-height: 400px;
+  /* 保证卡片有个最小高度 */
+  /* ✅ 新增动画，当 key 改变时触发 */
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* ✅ 导航和底部操作按钮的容器 */
+.navigation-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  background-color: var(--background);
-  font-family: var(--font-family);
+  gap: 20px;
+  /* 上下元素间距 */
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  /* 分割线 */
 }
 
-.streaming-page-card-container {
+/* ✅ 导航按钮组样式 */
+.nav-buttons {
   display: flex;
-  align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 1000px;
+  align-items: center;
+  gap: 24px;
+  /* 按钮和文字间距 */
 }
 
-.streaming-page-arrow {
-  font-size: 48px;
-  color: var(--secondary-text);
-  cursor: pointer;
-  padding: 0 20px;
-  user-select: none;
-  transition: color 0.3s ease;
+.nav-text {
+  font-size: 16px;
+  color: #555;
+  min-width: 150px;
+  /* 给文字一个固定宽度防止切换时跳动 */
+  text-align: center;
 }
 
-.streaming-page-arrow:hover {
-  color: var(--accent-color);
+
+/* ✅ 定义一个简单的淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.streaming-page-arrow-disabled {
-  color: var(--border-color);
-  cursor: not-allowed;
-}
-
-.streaming-page-question-card {
-  flex: 1;
-  min-width: 0;
-  background: var(--card-bg);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-}
-
-.streaming-page-submit-button {
-  margin-top: 20px;
-  background-color: var(--accent-color);
-  border-color: var(--accent-color);
-}
-
-.streaming-page-submit-button:hover {
-  background-color: var(--accent-hover);
-  border-color: var(--accent-hover);
-}

@@ -34,7 +34,7 @@ const TestFormPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('api_key');
+    const storedApiKey = localStorage.getItem('apiKey');
     if (storedApiKey) {
       setApiKey(storedApiKey);
     } else {
@@ -43,6 +43,7 @@ const TestFormPage = () => {
   }, []);
 
   const handleGenerate = async () => {
+    const testPaperStyle = localStorage.getItem('test_paper_style') || 'traditional';
     if (!knowledgeSource.sourceText && knowledgeSource.fileList.length === 0) {
       message.error('请提供知识源，可以是文本或文件。');
       return;
@@ -75,7 +76,8 @@ const TestFormPage = () => {
       formData.append('source_text', knowledgeSource.sourceText);
       formData.append('config_json', JSON.stringify(config));
 
-      if (!apiKey) {
+      const storedApiKey = localStorage.getItem('apiKey');
+      if (!storedApiKey) {
         message.error('请先在设置中填写您的API Key！');
         setIsModalOpen(true);
         setIsLoading(false);
@@ -88,7 +90,7 @@ const TestFormPage = () => {
 
       const headers = {
         'Content-Type': 'multipart/form-data',
-        'X-Api-Key': apiKey,
+        'X-Api-Key': storedApiKey,
         'X-Provider': apiProvider,
         'X-Generation-Model': generationModel,
       };
@@ -97,11 +99,24 @@ const TestFormPage = () => {
         headers['X-Generation-Prompt'] = encodeURIComponent(generationPrompt);
       }
 
-      const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });
-
-      setTestData(response.data);
-      message.success('试卷生成成功！正在跳转...');
-      navigate(`/testpaper/${response.data.test_id}`);
+      if (testPaperStyle === 'card') {
+        // 卡片模式，先创建试卷条目，然后跳转到流式页面
+        try {
+          const response = await axios.post('http://127.0.0.1:8000/tests', formData, { headers });
+          const test_id = response.data.test_id;
+          message.success('正在准备生成试卷...');
+          navigate(`/test-streaming/${test_id}`);
+        } catch (error) {
+          console.error("API Error during test creation:", error);
+          message.error(error.response?.data?.detail || '创建试卷失败，请检查网络或联系管理员。');
+        }
+      } else {
+        // 传统模式，调用普通接口
+        const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });
+        setTestData(response.data);
+        message.success('试卷生成成功！正在跳转...');
+        navigate(`/testpaper/${response.data.test_id}`);
+      }
     } catch (error) {
       console.error("API Error:", error);
       message.error(error.response?.data?.detail || '生成试卷失败，请检查API Key或联系管理员。');

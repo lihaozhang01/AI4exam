@@ -12,6 +12,8 @@ class TestPaper(Base):
     total_essay_questions = Column(Integer, default=0)  # 主观题总数
 
     source_content = Column(Text)
+    config = Column(JSON) # 保存生成配置
+    generation_prompt = Column(Text, nullable=True) # 保存生成提示
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     questions = relationship('DBQuestion', back_populates='test_paper', cascade="all, delete-orphan")
     results = relationship('TestPaperResult', back_populates='test_paper', cascade="all, delete-orphan")

@@ -1,5 +1,6 @@
 # services/database.py
 
+from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
@@ -16,11 +17,14 @@ def get_test_paper_by_id(db: Session, test_id: int) -> models.TestPaper:
         raise HTTPException(status_code=404, detail=f"Test with ID {test_id} not found.")
     return test_paper
 
-def create_test_paper(db: Session, source_content: str, ai_response: dict) -> models.TestPaper:
+def create_test_paper(db: Session, source_content: str, config: schemas.GenerateTestConfig, generation_prompt: str, ai_response: Optional[dict]) -> models.TestPaper:
     """Creates a test paper record in the database, including a generated name."""
-    # 優先從AI響應中獲取標題，否則生成預設標題
-    paper_name = ai_response.get('title', f"AI生成的試卷 - {source_content[:20]}...")
-    questions_data = ai_response.get('questions', [])
+    paper_name = "正在生成试卷..."
+    questions_data = []
+
+    if ai_response:
+        paper_name = ai_response.get('title', f"AI生成的試卷 - {source_content[:20]}...")
+        questions_data = ai_response.get('questions', [])
 
     # 計算客觀題和主觀題的數量
     total_objective = sum(1 for q in questions_data if q.get('type') in GRADING_STRATEGIES)
@@ -29,6 +33,8 @@ def create_test_paper(db: Session, source_content: str, ai_response: dict) -> mo
     db_test_paper = models.TestPaper(
         name=paper_name,
         source_content=source_content,
+        config=config.model_dump(),
+        generation_prompt=generation_prompt,
         total_objective_questions=total_objective,
         total_essay_questions=total_essay
     )
@@ -38,6 +44,41 @@ def create_test_paper(db: Session, source_content: str, ai_response: dict) -> mo
     for q_data in questions_data:
         db_question = models.DBQuestion(
             test_paper=db_test_paper, # Link back to the paper
+            question_type=q_data.get('type'),
+            stem=q_data.get('stem'),
+            options=q_data.get('options'),
+            correct_answer=q_data.get('answer')
+        )
+        db.add(db_question)
+
+    db.commit()
+    db.refresh(db_test_paper)
+    return db_test_paper
+
+def update_test_paper(db: Session, test_id: int, ai_response: dict) -> models.TestPaper:
+    """Updates an existing test paper with questions and metadata from the AI response."""
+    db_test_paper = get_test_paper_by_id(db, test_id)
+
+    paper_name = ai_response.get('title', db_test_paper.name) # Keep old name if no new one
+    questions_data = ai_response.get('questions', [])
+
+    # Recalculate question counts
+    total_objective = sum(1 for q in questions_data if q.get('type') in GRADING_STRATEGIES)
+    total_essay = sum(1 for q in questions_data if q.get('type') == 'essay')
+
+    # Update paper details
+    db_test_paper.name = paper_name
+    db_test_paper.total_objective_questions = total_objective
+    db_test_paper.total_essay_questions = total_essay
+
+    # Clear existing questions before adding new ones
+    for question in db_test_paper.questions:
+        db.delete(question)
+
+    # Add new questions
+    for q_data in questions_data:
+        db_question = models.DBQuestion(
+            test_paper_id=db_test_paper.id,
             question_type=q_data.get('type'),
             stem=q_data.get('stem'),
             options=q_data.get('options'),

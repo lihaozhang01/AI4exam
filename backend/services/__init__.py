@@ -13,6 +13,7 @@ from .ai import (
 from .database import (
     get_test_paper_by_id,
     create_test_paper,
+    update_test_paper,  # 匯入更新函式
     get_question_by_id,
     get_test_result_by_id,
     get_all_test_results,
@@ -47,6 +48,7 @@ __all__ = [
     # Database Services
     'get_test_paper_by_id',
     'create_test_paper',
+    'update_test_paper',
     'get_question_by_id',
     'get_test_result_by_id',
     'get_all_test_results',

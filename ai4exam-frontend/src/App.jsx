@@ -7,6 +7,7 @@ import TestPaperPage from './TestPaperPage';
 // 引入我们将要创建的真实表单页面
 import TestFormPage from './TestFormPage';
 import HistoryPage from './HistoryPage'; // 引入历史页面
+import TestStreamingPage from './TestStreamingPage'; // 引入流式页面
 
 // 试卷页的占位符
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/testpaper/:testId" element={<TestPaperPage />} />
         <Route path="/history/:resultId" element={<TestPaperPage />} />
+        <Route path="/test-streaming/:test_id" element={<TestStreamingPage />} />
       </Routes>
     </div>
   );

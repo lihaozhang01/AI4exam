@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, TestPaper, DBQuestion, TestPaperResult # 确保从您的模型文件中导入
 
 # --- 数据库设置 ---
-DATABASE_URL = "sqlite:///F:\\ai4exam\\test.db"  # 使用绝对路径指向正确的 test.db
+DATABASE_URL = "sqlite:///F:\\ai4exam\\backend\\test.db"  # 使用绝对路径指向正确的 test.db
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
@@ -36,7 +36,6 @@ def print_test_paper_details_by_id(test_paper_id=None):
 
         print(f"--- 试卷 ID: {test_paper.id} ---")
         print(f"试卷名称: {test_paper.name}")
-        print(f"来源类型: {test_paper.source_type}")
         # print(f"来源内容: {test_paper.source_content}")
         print(f"创建时间: {test_paper.created_at}")
         print("\n--- 试卷包含的问题 ---")

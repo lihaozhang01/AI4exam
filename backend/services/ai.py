@@ -45,7 +45,6 @@ async def generate_test_stream_from_ai(
         knowledge_content=knowledge_content,
         config_json=config.model_dump_json(indent=2)
     )
-
     # 初始化模型并开始流式生成
     try:
         model = genai.GenerativeModel(model_name)
@@ -56,7 +55,6 @@ async def generate_test_stream_from_ai(
         print(error_message)
         yield f"data: {json.dumps({'error': error_message})}\n\n" 
         return
-
     # --- 智能解析器 ---
     buffer = ""
     meta_yielded = False
@@ -77,8 +75,10 @@ async def generate_test_stream_from_ai(
                     yield f"data: {json.dumps({'type': 'metadata', 'content': meta_data})}\n\n"
                     meta_yielded = True
                 except json.JSONDecodeError:
-                    print(f"---[AI_SERVICE_DEBUG]---: Metadata decode error, putting back the chunk.")
-                    buffer = meta_part + meta_end_marker + buffer # 解析失败，放回去
+                    error_msg = f"Metadata JSON decode error for chunk: {meta_json_str[:200]}"
+                    print(f"---[AI_SERVICE_DEBUG]---: {error_msg}")
+                    yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
+                    # Do not put the chunk back, just discard it and continue.
 
         # 尝试解析问题
         question_end_marker = "%%END_OF_QUESTION%%"
@@ -93,9 +93,11 @@ async def generate_test_stream_from_ai(
                 yield f"data: {json.dumps({'type': 'question', 'content': question_data})}\n\n"
                 
             except json.JSONDecodeError:
-                print(f"---[AI_SERVICE_DEBUG]---: Question decode error, putting back the chunk.")
-                buffer = question_part + question_end_marker + buffer # 解析失败，放回去
-                break  # 等待下一个数据块
+                error_msg = f"Question JSON decode error for chunk: {question_json_str[:200]}"
+                print(f"---[AI_SERVICE_DEBUG]---: {error_msg}")
+                yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
+                # Do not put the chunk back, just discard it and continue to the next part.
+                pass # Continue to the next `while` loop iteration
 
 # --- AI Interaction Services ---
 
