@@ -16,7 +16,11 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
           <div
             key={i}
             className={`choice-option ${userAnswers[question.id] === i ? 'selected' : ''}`}
-            onClick={() => !gradingResult && updateUserAnswer(question.id, i)}
+            onClick={() => {
+              if (!gradingResult) {
+                updateUserAnswer(question.id, i);
+              }
+            }}
           >
             <Radio value={i} checked={userAnswers[question.id] === i} disabled={!!gradingResult} />
             <div className="choice-option-text">{String.fromCharCode(65 + i)}. {option}</div>

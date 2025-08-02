@@ -1,7 +1,14 @@
 // src/store/useTestStore.js
 import { create } from 'zustand';
 
-const useTestStore = create((set, get) => {
+// [无需修改] 诊断日志中间件
+const log = (config) => (set, get, api) => config((args) => {
+  set(args);
+}, get, api);
+
+
+const useTestStore = create(log((set, get) => {
+  // ... 其他代码保持不变 ...
   const resetStreamState = {
     streamMetadata: null,
     streamQuestions: [],
@@ -11,7 +18,7 @@ const useTestStore = create((set, get) => {
   };
 
   const processStreamResponse = async (response) => {
-    console.log('[STORE] processStreamResponse: Action started.');
+    
     set({ ...resetStreamState, isStreamLoading: true });
 
     try {
@@ -21,31 +28,24 @@ const useTestStore = create((set, get) => {
       let buffer = '';
 
       const processBuffer = () => {
-        // 使用 SSE 的标准分隔符 `\n\n` 来切分消息
         const messages = buffer.split('\n\n');
-
-        // 保留最后一个可能不完整的消息，放回缓冲区
         buffer = messages.pop() || '';
 
         for (const msg of messages) {
           if (msg.startsWith('data:')) {
-            const jsonStr = msg.substring(5).trim(); // 移除 "data: " 前缀
+            const jsonStr = msg.substring(5).trim();
             if (jsonStr) {
               try {
                 const data = JSON.parse(jsonStr);
-                console.log('[STORE] Successfully parsed data chunk:', data);
 
                 if (data.type === 'metadata') {
                   set({ streamMetadata: data.content });
                 } else if (data.type === 'question') {
-                  console.log('%c[STORE] Adding question to state:', 'color: green; font-weight: bold;', data.content);
                   set(state => ({ streamQuestions: [...state.streamQuestions, data.content] }));
                 } else if (data.type === 'end') {
-                  console.log('%c[STORE] End signal received!', 'color: red; font-weight: bold;');
-                  // 收到结束信号后，提前终止
                   set({ isStreamCompleted: true, isStreamLoading: false });
-                  reader.cancel(); // 确保 reader 被关闭
-                  return; // 退出处理函数
+                  reader.cancel();
+                  return;
                 }
               } catch (e) {
                 console.error('Failed to parse JSON from stream chunk:', jsonStr, e);
@@ -59,14 +59,11 @@ const useTestStore = create((set, get) => {
         const { value, done } = await reader.read();
 
         if (done) {
-          console.log('[STORE] Stream finished reading (done=true).');
-          // 处理缓冲区中可能剩余的最后一部分数据
           processBuffer();
           break;
         }
 
         buffer += value;
-        // 每次收到新数据后都尝试处理一下缓冲区
         processBuffer();
       }
     } catch (error) {
@@ -76,7 +73,6 @@ const useTestStore = create((set, get) => {
       }
     } finally {
       console.log('[STORE] processStreamResponse: Finalizing. Setting loading to false and completed to true.');
-      // 确保最终状态是完成
       set(state => ({
         isStreamLoading: false,
         isStreamCompleted: true
@@ -85,6 +81,7 @@ const useTestStore = create((set, get) => {
   };
 
   const reset = () => {
+    // ... 此函数内部代码保持不变 ...
     console.log('[STORE] reset: Full state reset called.');
     set({
       testData: null,
@@ -99,8 +96,8 @@ const useTestStore = create((set, get) => {
     });
   };
 
-  // The rest of the store remains the same...
   return {
+    // ... 其他 state 属性保持不变 ...
     testData: null,
     isLoading: false,
     userAnswers: {},
@@ -114,19 +111,31 @@ const useTestStore = create((set, get) => {
     isStreamLoading: false,
     isStreamCompleted: false,
     streamError: null,
-    setTestData: (data) => set({ testData: data, userAnswers: {}, gradingResults: null, submissionStatus: 'in_progress', overallFeedback: null, singleQuestionFeedbacks: {}, resultId: null }),
+    setTestData: (data) => set({ testData: data, gradingResults: null, submissionStatus: 'in_progress', overallFeedback: null, singleQuestionFeedbacks: {}, resultId: null }),
     setTestForHistory: (data) => set({ testData: data }),
     setIsLoading: (loading) => set({ isLoading: loading }),
     updateUserAnswer: (questionId, answer) => set((state) => ({ userAnswers: { ...state.userAnswers, [questionId]: answer } })),
-    setUserAnswers: (answers) => set({ userAnswers: answers }),
+
+    // ===================================================================
+    // [核心修改] 在这里增加日志来追踪调用者
+    setUserAnswers: (answers) => {
+      // 当 setUserAnswers 被调用时，打印传入的答案
+      console.warn('setUserAnswers was called! The provided answers are:', answers);
+      // 打印一个调用堆栈，告诉我们是哪个文件、哪一行代码调用了它
+      console.trace("Trace for setUserAnswers");
+      set({ userAnswers: answers });
+    },
+    // ===================================================================
+
     setGradingResults: (results, resultId) => set((state) => {
-      if (!state.testData || !state.testData.questions) return { gradingResults: results, resultId };
-      const newQuestions = state.testData.questions.map(q => {
-        const result = results.find(r => r.question_id === q.id);
+      if (!state.testData || !state.testData.questions) return { gradingResults: results || [], resultId };
+      const safeResults = results || [];
+      const newQuestions = (state.testData.questions || []).map(q => {
+        const result = safeResults.find(r => r.question_id === q.id);
         if (result && result.reference_explanation) return { ...q, reference_explanation: result.reference_explanation };
         return q;
       });
-      return { gradingResults: results, resultId, testData: { ...state.testData, questions: newQuestions } };
+      return { gradingResults: safeResults, resultId, testData: { ...state.testData, questions: newQuestions } };
     }),
     setSubmissionStatus: (status) => set({ submissionStatus: status }),
     setOverallFeedback: (feedback) => set({ overallFeedback: feedback }),
@@ -134,6 +143,6 @@ const useTestStore = create((set, get) => {
     processStreamResponse,
     reset,
   };
-});
+}));
 
 export default useTestStore;

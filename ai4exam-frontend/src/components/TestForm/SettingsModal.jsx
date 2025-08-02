@@ -71,7 +71,12 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
     setIsTesting(true);
     setConnectionStatus('unknown');
     try {
-      await axios.post('http://127.0.0.1:8000/test-connectivity', {}, {
+      // 发送 POST 请求到后端 /test-connectivity 端点
+      // 请求体中包含 generationModel，用于测试连接
+      // 请求头中包含 API Key 和提供商
+      await axios.post('http://127.0.0.1:8000/test-connectivity', 
+        { model_name: values.generationModel }, // 在请求体中发送模型名称
+        {
         headers: {
           'Content-Type': 'application/json',
           'X-Api-Key': values.apiKey,

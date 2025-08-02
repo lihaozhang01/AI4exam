@@ -16,7 +16,9 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
       <p>你的回答:</p>
       <TextArea
         rows={6}
-        onChange={(e) => updateUserAnswer(question.id, e.target.value)}
+        onChange={(e) => {
+          updateUserAnswer(question.id, e.target.value);
+        }}
         value={userAnswer}
         disabled={isSubmitted}
         style={{ marginBottom: '16px' }}

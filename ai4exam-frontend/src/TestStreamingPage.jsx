@@ -29,7 +29,7 @@ const TestStreamingPage = () => {
   const reset = useTestStore((state) => state.reset);
   const questionCount = streamQuestions.length;
   const currentQuestion = streamQuestions[currentQuestionIndex];
-
+  const isNavigatingToFullPaper = useRef(false);
   // Effect #1: Data Fetching
   useEffect(() => {
     // 在开发环境中，这个判断会阻止 effect 运行第二次
@@ -65,13 +65,18 @@ const TestStreamingPage = () => {
 
   }, [test_id, processStreamResponse]); // 依赖项保持不变
 
-  // Effect #2: Cleanup on unmount - this is correct.
+  // Effect #2: Cleanup on unmount
   useEffect(() => {
     return () => {
-      reset();
+      // ✅ 第3步：只有在不是导航到完整试卷的情况下才重置状态
+      if (!isNavigatingToFullPaper.current) {
+        console.log('[DEBUG] Navigating away, but NOT to the full paper. Resetting state.');
+        reset();
+      } else {
+        console.log('[DEBUG] Navigating to the full paper. State will be preserved.');
+      }
     }
-  }, [reset]);
-
+  }, [reset]); // 依赖项保持不变
   // Keyboard navigation effect - this is correct.
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -86,23 +91,53 @@ const TestStreamingPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [questionCount]);
 
-  const handleViewPaper = () => navigate(`/testpaper/${test_id}`);
+  const handleViewPaper = () => {
+    console.log('[DEBUG] 点击查看完整试卷前的store状态:', useTestStore.getState());
+    console.log('[DEBUG] 当前streamQuestions:', useTestStore.getState().streamQuestions);
+    console.log('[DEBUG] 当前userAnswers:', useTestStore.getState().userAnswers);
+    
+    // 同步流式答题状态到完整试卷
+    isNavigatingToFullPaper.current = true;
+    const { userAnswers, setUserAnswers, streamQuestions } = useTestStore.getState();
+    
+    // 合并流式答题状态到现有答案
+    const updatedAnswers = { ...userAnswers };
+    
+    // 遍历流式问题，将已回答的问题同步到全局答案
+    streamQuestions.forEach(question => {
+      // 从 userAnswers 中获取当前问题的答案（无论是否存在）
+      updatedAnswers[question.id] = userAnswers[question.id];
+    });
+    
+    console.log('[DEBUG] 同步后的updatedAnswers:', updatedAnswers);
+    
+    // 更新全局用户答案
+    useTestStore.getState().setUserAnswers(updatedAnswers);
+    
+    console.log('[DEBUG] 更新后的store状态:', useTestStore.getState());
+    
+    // 跳转到完整试卷页面
+    navigate(`/testpaper/${test_id}?from=streaming`);
+  };
 
   const renderQuestionComponent = (question, index) => {
     if (!question) return null;
     const commonProps = { question, index };
-    switch (question.type) { //  <-- 修改这里
+    
+    // 添加调试信息：每次渲染问题时打印当前答案
+    const currentAnswer = useTestStore.getState().userAnswers[question.id];
+    
+    switch (question.type) {
       case 'multiple_choice': return <MultipleChoiceQuestion {...commonProps} />;
       case 'fill_in_the_blank': return <FillInTheBlankQuestion {...commonProps} />;
       case 'essay': return <EssayQuestion {...commonProps} />;
       case 'single_choice': return <SingleChoiceQuestion {...commonProps} />;
-      default: return <p>未知题型: {question.type}</p>; //  <-- 顺便修改这里，以便未来调试
+      default: return <p>未知题型: {question.type}</p>;
     }
   };
 
   return (
     <div className="test-streaming-page">
-      {isStreamLoading && !currentQuestion && <Spin tip="正在生成首道题目..." size="large" fullscreen />}
       {streamError && <Alert message="错误" description={streamError} type="error" showIcon closable />}
 
       {streamMetadata && (
@@ -119,13 +154,7 @@ const TestStreamingPage = () => {
         })()}
 
         {currentQuestion ? (
-          <Card
-            title={`第 ${currentQuestionIndex + 1} 题`}
-            bordered={false}
-            key={currentQuestionIndex}
-          >
-            {renderQuestionComponent(currentQuestion, currentQuestionIndex)}
-          </Card>
+          renderQuestionComponent(currentQuestion, currentQuestionIndex)
         ) : (
           isStreamCompleted ? (
             <Alert message={`错误：无法加载第 ${currentQuestionIndex + 1} 题。`} type="error" />
@@ -153,7 +182,7 @@ const TestStreamingPage = () => {
         </div>
 
         {isStreamCompleted && (
-          <Button type="primary" size="large" onClick={handleViewPaper}>
+          <Button type="primary" size="large" className="go-to-fullpaper" onClick={handleViewPaper}>
             查看完整试卷
           </Button>
         )}

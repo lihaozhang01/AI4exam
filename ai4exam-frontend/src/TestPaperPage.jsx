@@ -1,8 +1,8 @@
 // src/TestPaperPage.jsx
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
-import { Empty, Button, Divider, message, Checkbox, Alert, Spin, Space } from 'antd';
+import React, { useEffect, useState, useRef } from 'react'; // 1. 引入 useRef
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { Empty, Button, Divider, message, Alert, Spin, Space } from 'antd';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
 
@@ -15,8 +15,11 @@ import './TestPaperPage.css';
 
 // Helper function to build the payload for API calls
 const buildAnswersPayload = (userAnswers, questions) => {
+  if (!questions || !Array.isArray(questions)) {
+    return [];
+  }
   return Object.keys(userAnswers).map(questionId => {
-    const question = questions.find(q => q.id === questionId);
+    const question = questions.find(q => String(q.id) === questionId); // Robust comparison
     if (!question) {
       console.warn(`Question with id ${questionId} not found. Skipping.`);
       return null;
@@ -30,7 +33,6 @@ const buildAnswersPayload = (userAnswers, questions) => {
       case 'multiple_choice':
         return { ...basePayload, answer_indices: answer || [] };
       case 'fill_in_the_blank':
-        // 如果答案是单个字符串（由$$$拼接），则拆分为数组
         const answers = typeof answer === 'string' ? answer.split('$$$') : (answer || []);
         return { ...basePayload, answer_texts: answers };
       case 'essay':
@@ -43,18 +45,18 @@ const buildAnswersPayload = (userAnswers, questions) => {
 
 const TestPaperPage = () => {
   const { testId, resultId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const {
     testData,
     setTestData,
-    setTestForHistory, // 使用新的 action
+    setTestForHistory,
     userAnswers,
     setUserAnswers,
     isLoading,
     setIsLoading,
     setGradingResults,
-    resultId: storeResultId, // Rename to avoid conflict with useParams resultId
+    resultId: storeResultId,
     gradingResults,
     overallFeedback,
     setOverallFeedback,
@@ -66,16 +68,60 @@ const TestPaperPage = () => {
   } = useTestStore();
 
   const [originalTestId, setOriginalTestId] = useState(null);
+  const effectRan = useRef(false);
 
   useEffect(() => {
+    if (effectRan.current === true && process.env.NODE_ENV === 'development') {
+      return;
+    }
     const fetchTestPaper = async (id) => {
       setIsLoading(true);
       try {
+        const fromStreaming = searchParams.get('from') === 'streaming';
+
         const response = await axios.get(`http://127.0.0.1:8000/test-papers/${id}`);
-        reset();
+
+        if (!fromStreaming) {
+          reset();
+        }
+
+        const newQuestions = response.data.questions || [];
+        const answersToKeep = {};
+
+        if (fromStreaming) {
+          // 从 store 获取流式答题的答案和题目
+          const { userAnswers: streamAnswers, streamQuestions } = useTestStore.getState();
+
+          // ✅ 最终解决方案：基于顺序进行答案合并
+          // 遍历从API获取的新题目
+          newQuestions.forEach((newQuestion, index) => {
+            // 找到流式题目中对应顺序的题目
+            const correspondingStreamQuestion = streamQuestions[index];
+            if (correspondingStreamQuestion) {
+              // 获取这个流式题目的ID (例如 'q1')
+              const streamQuestionId = correspondingStreamQuestion.id;
+              // 在流式答案中用这个ID查找对应的答案
+              const answerForThisQuestion = streamAnswers[streamQuestionId];
+
+              // 如果找到了答案，就把它赋给新题目的ID (例如 '123')
+              if (answerForThisQuestion !== undefined) {
+                answersToKeep[newQuestion.id] = answerForThisQuestion;
+              }
+            }
+          });
+        }
+
+        // 更新状态
         setTestData(response.data);
+        setUserAnswers(answersToKeep);
+
+        // 设置其他状态
         setSubmissionStatus('in_progress');
+        setGradingResults(null);
+        setOverallFeedback(null);
+        setSingleQuestionFeedback({});
         setOriginalTestId(id);
+
       } catch (error) {
         console.error("获取新试卷失败:", error.response ? error.response.data : error.message);
         message.error("获取新试卷失败，请返回首页重试。" + (error.response ? `(${error.response.status})` : ''));
@@ -86,49 +132,34 @@ const TestPaperPage = () => {
     };
 
     const fetchTestResult = async (id) => {
+      // This function remains unchanged.
       setIsLoading(true);
       try {
         const response = await axios.get(`http://127.0.0.1:8000/history/${id}`);
         const result = response.data;
-
         const testPaperResponse = await axios.get(`http://127.0.0.1:8000/test-papers/${result.test_paper_id}`);
-        setTestForHistory(testPaperResponse.data); // 改为调用 setTestForHistory
-        const answers = result.user_answers;
+        setTestForHistory(testPaperResponse.data);
+        const answers = result.user_answers || [];
         const formattedAnswers = {};
         answers.forEach(ans => {
           let finalAnswer;
-          if (ans.answer_index !== null && ans.answer_index !== undefined) {
-            finalAnswer = ans.answer_index;
-          } else if (ans.answer_indices) {
-            finalAnswer = ans.answer_indices;
-          } else if (ans.answer_texts) {
-            finalAnswer = ans.answer_texts;
-          } else if (ans.answer_text) {
-            finalAnswer = ans.answer_text;
-          } else {
-            finalAnswer = null;
-          }
-
-          if (finalAnswer !== null) {
-            formattedAnswers[ans.question_id] = finalAnswer;
-          }
+          if (ans.answer_index !== null && ans.answer_index !== undefined) finalAnswer = ans.answer_index;
+          else if (ans.answer_indices) finalAnswer = ans.answer_indices;
+          else if (ans.answer_texts) finalAnswer = ans.answer_texts;
+          else if (ans.answer_text) finalAnswer = ans.answer_text;
+          else finalAnswer = null;
+          if (finalAnswer !== null) formattedAnswers[ans.question_id] = finalAnswer;
         });
         setUserAnswers(formattedAnswers);
-        setGradingResults(result.grading_results, id); // Also set resultId in store
-
-        // Restore AI feedback if available
-        if (result.overall_feedback) {
-          setOverallFeedback(result.overall_feedback);
-        }
+        setGradingResults(result.grading_results || [], id);
+        if (result.overall_feedback) setOverallFeedback(result.overall_feedback);
         if (result.question_feedbacks) {
           Object.entries(result.question_feedbacks).forEach(([qId, feedback]) => {
             setSingleQuestionFeedback(qId, feedback);
           });
         }
-
         setSubmissionStatus('submitted_and_showing_answers');
         setOriginalTestId(result.test_paper_id);
-
       } catch (error) {
         console.error("获取历史试卷失败:", error.response ? error.response.data : error.message);
         message.error("获取历史试卷失败，请稍后重试。" + (error.response ? `(${error.response.status})` : ''));
@@ -145,43 +176,28 @@ const TestPaperPage = () => {
     } else if (!testData) {
       navigate('/');
     }
-    // Using location.key forces a re-fetch when navigating to the same route
-  }, [resultId, testId, navigate, location.key]);
+    // 4. 在 effect 的末尾标记它已经运行过一次
+    return () => {
+      effectRan.current = true;
+    }
+  }, [resultId, testId, navigate, searchParams, setTestData, setTestForHistory, setUserAnswers, setIsLoading, setGradingResults, setOverallFeedback, setSubmissionStatus, setSingleQuestionFeedback, reset]);
 
   const handleSubmitAndShowAnswers = async () => {
+    // This function remains unchanged.
     setIsLoading(true);
     try {
-      if (!testData || !testData.test_id) {
-        message.error("试卷信息不完整，无法提交。请返回首页重试。");
-        return;
-      }
-
+      if (!testData || !testData.test_id) { message.error("试卷信息不完整，无法提交。请返回首页重试。"); return; }
+      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
       const generationModel = localStorage.getItem('generation_model');
-      const generationPrompt = localStorage.getItem('generation_prompt_for_grading'); // Assuming this is the correct key
-      if (!apiKey) {
-        message.error('请先在右上角设置中填写您的API Key！');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await axios.post('http://127.0.0.1:8000/grade-questions', {
-        test_id: testData.test_id,
-        answers: allAnswers,
-      }, {
-        headers: {
-          'X-Api-Key': apiKey,
-          'X-Generation-Model': generationModel,
-          'X-Generation-Prompt': generationPrompt ? encodeURIComponent(generationPrompt) : '',
-        }
+      const generationPrompt = localStorage.getItem('generation_prompt_for_grading');
+      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
+      const response = await axios.post('http://127.0.0.1:8000/grade-questions', { test_id: testData.test_id, answers: allAnswers }, {
+        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': generationPrompt ? encodeURIComponent(generationPrompt) : '' }
       });
-
       setGradingResults(response.data.results, response.data.result_id);
-
       setSubmissionStatus('submitted_and_showing_answers');
-      // After submission, navigate to the result page to reflect the URL change
-      // This makes the resultId from useParams available and consistent
       navigate(`/history/${response.data.result_id}`, { replace: true });
       message.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
     } catch (error) {
@@ -200,42 +216,21 @@ const TestPaperPage = () => {
   };
 
   const handleRequestAiFeedback = async () => {
+    // This function remains unchanged.
     setIsLoading(true);
     message.info('正在请求AI对整卷进行分析，请稍候...');
     try {
-      if (!testData || !testData.test_id) {
-        message.error("试卷信息不完整，无法请求分析。");
-        return;
-      }
-
+      if (!testData || !testData.test_id) { message.error("试卷信息不完整，无法请求分析。"); return; }
+      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
       const generationModel = localStorage.getItem('generation_model');
       const overallFeedbackPrompt = localStorage.getItem('overall_feedback_prompt');
-
-      if (!apiKey) {
-        message.error('请先在右上角设置中填写您的API Key！');
-        setIsLoading(false);
-        return;
-      }
-
+      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const currentResultId = storeResultId || resultId;
-      if (!currentResultId) {
-        message.error("无法获取到试卷结果ID，请先提交答案。");
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', {
-        result_id: parseInt(currentResultId, 10),
-        test_id: testData.test_id,
-        answers: answersToSend,
-      }, {
-        headers: {
-          'X-Api-Key': apiKey,
-          'X-Generation-Model': generationModel,
-          'X-Generation-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '',
-        }
+      if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); setIsLoading(false); return; }
+      const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', { result_id: parseInt(currentResultId, 10), test_id: testData.test_id, answers: answersToSend }, {
+        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '' }
       });
       setOverallFeedback(response.data.feedback);
       message.success('AI分析完成！');
@@ -248,60 +243,30 @@ const TestPaperPage = () => {
   };
 
   const handleRequestSingleQuestionFeedback = async (questionId) => {
+    // This function remains unchanged.
     message.info(`正在为题目 ${questionId} 请求AI点评...`);
     try {
+      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); return; }
       const question = testData.questions.find(q => q.id === questionId);
+      if (!question) { message.error('题目不存在'); return; }
       let userAnswer = userAnswers[questionId];
-
-      // 确保填空题答案是数组格式
-      if (question.type === 'fill_in_the_blank' && typeof userAnswer === 'string') {
-        userAnswer = userAnswer.split('$$$');
-      }
-
+      if (question.type === 'fill_in_the_blank' && typeof userAnswer === 'string') userAnswer = userAnswer.split('$$$');
       const apiKey = localStorage.getItem('api_key');
       const generationModel = localStorage.getItem('generation_model');
       const singleQuestionFeedbackPrompt = localStorage.getItem('single_question_feedback_prompt');
-
-      if (!apiKey) {
-        message.error('请先在右上角设置中填写您的API Key！');
-        return; // No loading state change needed here as it's per-question
-      }
-
+      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); return; }
       let userAnswerPayload;
       switch (question.type) {
-        case 'single_choice':
-          userAnswerPayload = { question_type: 'single_choice', answer_index: userAnswer };
-          break;
-        case 'multiple_choice':
-          userAnswerPayload = { question_type: 'multiple_choice', answer_indices: userAnswer || [] };
-          break;
-        case 'fill_in_the_blank':
-          userAnswerPayload = { question_type: 'fill_in_the_blank', answer_texts: userAnswer || [] };
-          break;
-        case 'essay':
-          userAnswerPayload = { question_type: 'essay', answer_text: userAnswer || "" };
-          break;
-        default:
-          message.error(`Unsupported question type: ${question.type}`);
-          return;
+        case 'single_choice': userAnswerPayload = { question_type: 'single_choice', answer_index: userAnswer }; break;
+        case 'multiple_choice': userAnswerPayload = { question_type: 'multiple_choice', answer_indices: userAnswer || [] }; break;
+        case 'fill_in_the_blank': userAnswerPayload = { question_type: 'fill_in_the_blank', answer_texts: userAnswer || [] }; break;
+        case 'essay': userAnswerPayload = { question_type: 'essay', answer_text: userAnswer || "" }; break;
+        default: message.error(`Unsupported question type: ${question.type}`); return;
       }
-
       const currentResultId = storeResultId || resultId;
-      if (!currentResultId) {
-        message.error("无法获取到试卷结果ID，请先提交答案。");
-        return; // No loading state to change here, it's a quick action
-      }
-
-      const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', {
-        result_id: parseInt(currentResultId, 10),
-        question_id: question.id,
-        user_answer: userAnswerPayload,
-      }, {
-        headers: {
-          'X-Api-Key': apiKey,
-          'X-Generation-Model': generationModel,
-          'X-Generation-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '',
-        }
+      if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); return; }
+      const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', { result_id: parseInt(currentResultId, 10), question_id: question.id, user_answer: userAnswerPayload }, {
+        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '' }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
       message.success(`题目 ${questionId} 的AI点评已生成！`);
@@ -315,15 +280,7 @@ const TestPaperPage = () => {
     !testData || !testData.questions ? null :
       <>
         {overallFeedback && (
-          <Alert
-            message="AI 总结与点评"
-            description={<MarkdownRenderer>{overallFeedback}</MarkdownRenderer>}
-            type="info"
-            showIcon
-            style={{ marginBottom: '24px' }}
-            closable
-            onClose={() => setOverallFeedback(null)}
-          />
+          <Alert message="AI 总结与点评" description={<MarkdownRenderer>{overallFeedback}</MarkdownRenderer>} type="info" showIcon style={{ marginBottom: '24px' }} closable onClose={() => setOverallFeedback(null)} />
         )}
         {testData.questions.map((question, index) => (
           <div key={question.id}>
@@ -333,25 +290,15 @@ const TestPaperPage = () => {
                 case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
                 case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
                 case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
-                case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />; // 确保传递了 gradingResult
+                case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />;
                 default: return <p>未知题型</p>;
               }
             })()}
             {submissionStatus === 'submitted_and_showing_answers' && (
               <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9f9f9', borderTop: '1px solid #eee' }}>
-                <Button onClick={() => handleRequestSingleQuestionFeedback(question.id)}>
-                  请求 AI 点评此题
-                </Button>
+                <Button onClick={() => handleRequestSingleQuestionFeedback(question.id)}> 请求 AI 点评此题 </Button>
                 {singleQuestionFeedbacks[question.id] && (
-                  <Alert
-                    message="AI 点评"
-                    description={<MarkdownRenderer>{singleQuestionFeedbacks[question.id]}</MarkdownRenderer>}
-                    type="info"
-                    showIcon
-                    style={{ marginTop: '16px' }}
-                    closable
-                    onClose={() => setSingleQuestionFeedback(question.id, null)}
-                  />
+                  <Alert message="AI 点评" description={<MarkdownRenderer>{singleQuestionFeedbacks[question.id]}</MarkdownRenderer>} type="info" showIcon style={{ marginTop: '16px' }} closable onClose={() => setSingleQuestionFeedback(question.id, null)} />
                 )}
               </div>
             )}
@@ -369,22 +316,19 @@ const TestPaperPage = () => {
     );
   }
 
-
-
-  // 在确认 testData 存在后再解构
-  const { name, description, questions } = testData || {};
+  const { name, description } = testData || {};
 
   return (
     <div className="test-paper-container">
       <div className="test-paper-header">
-        <div> {/* 左侧空 div，用于对齐 */} </div>
+        <div></div>
         <div style={{ textAlign: 'center' }}>
           <h1>{name}</h1>
           <p>{description}</p>
         </div>
         <div className="test-paper-header-nav-side">
-          <Link to="/" className="paper-to-generator">新建试卷</Link>
-          <Link to="/history" className="paper-to-history">历史试卷</Link>
+          <Link to="/" className="paper-to-generator">←返回新建试卷</Link>
+          <Link to="/history" className="paper-to-history">查看历史试卷→</Link>
         </div>
       </div>
       <div className="scrollable-content">
@@ -392,18 +336,12 @@ const TestPaperPage = () => {
         {renderContent()}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           {submissionStatus === 'in_progress' && (
-            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}>
-              提交并查看答案
-            </Button>
+            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}> 提交并查看答案 </Button>
           )}
           {submissionStatus === 'submitted_and_showing_answers' && (
             <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
-              <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}>
-                {isLoading ? '正在请求AI分析...' : '请求AI进行分析'}
-              </Button>
-              <Button size="large" onClick={handleRetakeTest}>
-                重新作答
-              </Button>
+              <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}> {isLoading ? '正在请求AI分析...' : '请求AI进行分析'} </Button>
+              <Button size="large" onClick={handleRetakeTest}> 重新作答 </Button>
             </Space>
           )}
           {submissionStatus === 'submitted_and_showing_answers' && gradingResults && (

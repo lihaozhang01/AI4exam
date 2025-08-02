@@ -48,7 +48,7 @@ GENERATE_STREAMABLE_TEST_PROMPT = {
 
 ### **重要：完整输出流最终形态示例**
 
-你的最终输出应该是一个纯净的文本流，严格如下所示（注意换行符 `\\n` 的位置）：
+你的最终输出应该是一个纯净的文本流，如下所示（注意换行符 `\\n` 的位置），下面是一个输出1个single_choice问题，1个fill_in_the_blank问题，1个multiple_choice问题的示例，你输出的问题数目应该来自config_json中的"question_count"字段：
 
 `{{"title": "示例试卷标题"}}\\n%%END_OF_META%%\\n{{"id": "q1", "type": "single_choice", "stem": "...", "options": [...], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n{{"id": "q2", "type": "fill_in_the_blank", "stem": "...", "options": [], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n{{"id": "q3", "type": "multiple_choice", "stem": "...", "options": [...], "answer": {{...}}}}\\n%%END_OF_QUESTION%%\\n`
 """
