@@ -56,7 +56,7 @@ function HistoryPage() {
     });
 
     try {
-      
+
       const response = await fetch(`${url}?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -260,9 +260,9 @@ function HistoryPage() {
                       label="客观题正确率"
                       value={`${item.correct_objective_questions ?? 'N/A'} / ${item.test_paper?.total_objective_questions || 0}`}
                     />
-                    <StatCard 
-                      label="论述题总数" 
-                      value={`${item.test_paper?.total_essay_questions ?? 'N/A'}`} 
+                    <StatCard
+                      label="论述题总数"
+                      value={`${item.test_paper?.total_essay_questions ?? 'N/A'}`}
                     />
                   </div>
                 </div>

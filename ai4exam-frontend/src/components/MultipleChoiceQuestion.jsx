@@ -32,7 +32,7 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
               onClick={() => !gradingResult && handleChange(i)}
             >
               <Checkbox value={i} checked={isSelected} disabled={!!gradingResult} />
-              <div className="choice-option-text">{String.fromCharCode(65 + i)}. {option}</div>
+              <div className="choice-option-text"><MarkdownRenderer>{`${String.fromCharCode(65 + i)}. ${option}`}</MarkdownRenderer></div>
             </div>
           );
         })}

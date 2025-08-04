@@ -195,11 +195,11 @@ const TestPaperPage = () => {
       const evaluationPrompt = localStorage.getItem('evaluationPrompt');
       if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/grade-questions', { test_id: testData.test_id, answers: allAnswers }, {
-        headers: { 
+        headers: {
           'X-Api-Key': apiKey,
-          'X-Provider': apiProvider, 
-          'X-Evaluation-Model': evaluationModel, 
-          'X-Evaluation-Prompt': evaluationPrompt ? encodeURIComponent(evaluationPrompt) : '' 
+          'X-Provider': apiProvider,
+          'X-Evaluation-Model': evaluationModel,
+          'X-Evaluation-Prompt': evaluationPrompt ? encodeURIComponent(evaluationPrompt) : ''
         }
       });
       setGradingResults(response.data.results, response.data.result_id);
@@ -237,11 +237,11 @@ const TestPaperPage = () => {
       const currentResultId = storeResultId || resultId;
       if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', { result_id: parseInt(currentResultId, 10), test_id: testData.test_id, answers: answersToSend }, {
-        headers: { 
-          'X-Api-Key': apiKey, 
+        headers: {
+          'X-Api-Key': apiKey,
           'X-Provider': apiProvider,
-          'X-Evaluation-Model': evaluationModel, 
-          'X-Overall-Feedback-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '' 
+          'X-Evaluation-Model': evaluationModel,
+          'X-Overall-Feedback-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : ''
         }
       });
       setOverallFeedback(response.data.feedback);
@@ -267,7 +267,7 @@ const TestPaperPage = () => {
       const evaluationModel = localStorage.getItem('evaluation_model');
       const singleQuestionFeedbackPrompt = localStorage.getItem('singleQuestionFeedbackPrompt');
       const apiProvider = localStorage.getItem('api_provider');
-      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); return; }
+      if (!apiKey) { message.error('请先在新建页面的右下角设置中填写您的API Key！'); return; }
       let userAnswerPayload;
       switch (question.type) {
         case 'single_choice': userAnswerPayload = { question_type: 'single_choice', answer_index: userAnswer }; break;
@@ -279,11 +279,11 @@ const TestPaperPage = () => {
       const currentResultId = storeResultId || resultId;
       if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', { result_id: parseInt(currentResultId, 10), question_id: question.id, user_answer: userAnswerPayload }, {
-        headers: { 
-          'X-Api-Key': apiKey, 
-          'X-Provider': apiProvider, 
-          'X-Evaluation-Model': evaluationModel, 
-          'X-Single-Question-Feedback-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '' 
+        headers: {
+          'X-Api-Key': apiKey,
+          'X-Provider': apiProvider,
+          'X-Evaluation-Model': evaluationModel,
+          'X-Single-Question-Feedback-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : ''
         }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
@@ -335,7 +335,7 @@ const TestPaperPage = () => {
   }
 
   const { name, description } = testData || {};
-
+  console.log('[DEBUG] TestPaperPage testData:', testData);
   return (
     <div className="test-paper-container">
       <div className="test-paper-header">

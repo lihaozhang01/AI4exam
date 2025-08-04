@@ -23,7 +23,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
             }}
           >
             <Radio value={i} checked={userAnswers[question.id] === i} disabled={!!gradingResult} />
-            <div className="choice-option-text">{String.fromCharCode(65 + i)}. {option}</div>
+            <div className="choice-option-text"><MarkdownRenderer>{`${String.fromCharCode(65 + i)}. ${option}`}</MarkdownRenderer></div>
           </div>
         ))}
       </Space>

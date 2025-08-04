@@ -37,12 +37,12 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
           {gradingResult && gradingResult.feedback && (
             <div style={{ marginTop: '16px' }}>
               <Divider>AI 详细点评</Divider>
-              <p><strong>总评: </strong> {gradingResult.feedback}</p>
+              <p><strong>总评: </strong><MarkdownRenderer>{gradingResult.feedback}</MarkdownRenderer></p>
               <List
                 size="small"
                 header={<strong>优点:</strong>}
                 dataSource={gradingResult.strengths || []}
-                renderItem={(item) => <List.Item>✅ {item}</List.Item>}
+                renderItem={(item) => <List.Item>✅ <MarkdownRenderer>{item}</MarkdownRenderer></List.Item>}
                 bordered
                 style={{ marginBottom: '10px' }}
               />
@@ -50,7 +50,7 @@ const EssayQuestion = ({ question, index, gradingResult }) => {
                 size="small"
                 header={<strong>待改进:</strong>}
                 dataSource={gradingResult.areas_for_improvement || []}
-                renderItem={(item) => <List.Item>❌ {item}</List.Item>}
+                renderItem={(item) => <List.Item>❌ <MarkdownRenderer>{item}</MarkdownRenderer></List.Item>}
                 bordered
               />
             </div>

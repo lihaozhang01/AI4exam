@@ -17,14 +17,17 @@ def get_test_paper_by_id(db: Session, test_id: int) -> models.TestPaper:
         raise HTTPException(status_code=404, detail=f"Test with ID {test_id} not found.")
     return test_paper
 
-def create_test_paper(db: Session, source_content: str, config: schemas.GenerateTestConfig, generation_prompt: str, ai_response: Optional[dict]) -> models.TestPaper:
+def create_test_paper(db: Session, name: Optional[str], source_content: str, config: schemas.GenerateTestConfig, generation_prompt: str, ai_response: Optional[dict]) -> models.TestPaper:
     """Creates a test paper record in the database, including a generated name."""
-    paper_name = "正在生成试卷..."
-    questions_data = []
+    # Determine the paper name. Prioritize the user-provided name.
+    paper_name = name
+    if not paper_name:
+        if ai_response and 'title' in ai_response:
+            paper_name = ai_response['title']
+        else:
+            paper_name = f"AI生成的試卷 - {source_content[:20]}..."
 
-    if ai_response:
-        paper_name = ai_response.get('title', f"AI生成的試卷 - {source_content[:20]}...")
-        questions_data = ai_response.get('questions', [])
+    questions_data = ai_response.get('questions', []) if ai_response else []
 
     # 計算客觀題和主觀題的數量
     total_objective = sum(1 for q in questions_data if q.get('type') in GRADING_STRATEGIES)
@@ -59,7 +62,12 @@ def update_test_paper(db: Session, test_id: int, ai_response: dict) -> models.Te
     """Updates an existing test paper with questions and metadata from the AI response."""
     db_test_paper = get_test_paper_by_id(db, test_id)
 
-    paper_name = ai_response.get('title', db_test_paper.name) # Keep old name if no new one
+    # Only update the name if a non-empty title is provided in the AI response.
+    new_paper_name = ai_response.get('title')
+    if new_paper_name:
+        db_test_paper.name = new_paper_name
+
+    questions_data = ai_response.get('questions', [])
     questions_data = ai_response.get('questions', [])
 
     # Recalculate question counts
@@ -67,7 +75,6 @@ def update_test_paper(db: Session, test_id: int, ai_response: dict) -> models.Te
     total_essay = sum(1 for q in questions_data if q.get('type') == 'essay')
 
     # Update paper details
-    db_test_paper.name = paper_name
     db_test_paper.total_objective_questions = total_objective
     db_test_paper.total_essay_questions = total_essay
 

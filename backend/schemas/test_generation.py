@@ -38,4 +38,5 @@ class QuestionModel(BaseModel):
 
 class GenerateTestResponse(BaseModel):
     test_id: str
+    name: str  # 试卷名称
     questions: List[QuestionModel]

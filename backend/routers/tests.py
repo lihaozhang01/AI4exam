@@ -22,6 +22,7 @@ async def create_test_entry(
     source_file: Optional[UploadFile] = File(None),
     source_text: Optional[str] = Form(None),
     config_json: str = Form(...),
+    name: Optional[str] = Form(None), # 试卷名称
     generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
     generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
 ):
@@ -42,6 +43,7 @@ async def create_test_entry(
     # 在数据库中创建试卷记录，但不生成具体问题
     db_test_paper = services.create_test_paper(
         db=db, 
+        name=name,
         source_content=knowledge_content, 
         config=config, 
         generation_prompt=generation_prompt,
@@ -57,6 +59,7 @@ async def generate_test(
     source_file: Optional[UploadFile] = File(None),
     source_text: Optional[str] = Form(None),
     config_json: str = Form(...),
+    name: Optional[str] = Form(None),
     provider: str = Header(..., alias="X-Provider"),
     api_key: str = Header(..., alias="X-Api-Key"),
     generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
@@ -87,6 +90,7 @@ async def generate_test(
     )
     db_test_paper = services.create_test_paper(
         db,
+        name=name,
         source_content=knowledge_content,
         config=config,  # [New] Pass config
         generation_prompt=decoded_prompt,  # [New] Pass decoded_prompt
@@ -104,7 +108,11 @@ async def generate_test(
         for q in db_test_paper.questions
     ]
 
-    return schemas.GenerateTestResponse(test_id=str(db_test_paper.id), questions=questions_data)
+    return schemas.GenerateTestResponse(
+        test_id=str(db_test_paper.id), 
+        name=db_test_paper.name, 
+        questions=questions_data
+    )
 
 
 @router.get("/generate-stream-test/{test_id}")
@@ -175,4 +183,8 @@ async def get_test(test_id: int, db: Session = Depends(get_db)):
         for q in test_paper.questions
     ]
 
-    return schemas.GenerateTestResponse(test_id=str(test_paper.id), questions=questions_to_return)
+    return schemas.GenerateTestResponse(
+        test_id=str(test_paper.id), 
+        name=test_paper.name, 
+        questions=questions_to_return
+    )
