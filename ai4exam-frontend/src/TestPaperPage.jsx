@@ -190,11 +190,17 @@ const TestPaperPage = () => {
       if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
-      const generationModel = localStorage.getItem('generation_model');
-      const generationPrompt = localStorage.getItem('generation_prompt_for_grading');
+      const apiProvider = localStorage.getItem('api_provider');
+      const evaluationModel = localStorage.getItem('evaluation_model');
+      const evaluationPrompt = localStorage.getItem('evaluationPrompt');
       if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/grade-questions', { test_id: testData.test_id, answers: allAnswers }, {
-        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': generationPrompt ? encodeURIComponent(generationPrompt) : '' }
+        headers: { 
+          'X-Api-Key': apiKey,
+          'X-Provider': apiProvider, 
+          'X-Evaluation-Model': evaluationModel, 
+          'X-Evaluation-Prompt': evaluationPrompt ? encodeURIComponent(evaluationPrompt) : '' 
+        }
       });
       setGradingResults(response.data.results, response.data.result_id);
       setSubmissionStatus('submitted_and_showing_answers');
@@ -224,13 +230,19 @@ const TestPaperPage = () => {
       if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
-      const generationModel = localStorage.getItem('generation_model');
-      const overallFeedbackPrompt = localStorage.getItem('overall_feedback_prompt');
+      const apiProvider = localStorage.getItem('api_provider');
+      const evaluationModel = localStorage.getItem('evaluation_model');
+      const overallFeedbackPrompt = localStorage.getItem('overallFeedbackPrompt');
       if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const currentResultId = storeResultId || resultId;
       if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', { result_id: parseInt(currentResultId, 10), test_id: testData.test_id, answers: answersToSend }, {
-        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '' }
+        headers: { 
+          'X-Api-Key': apiKey, 
+          'X-Provider': apiProvider,
+          'X-Evaluation-Model': evaluationModel, 
+          'X-Overall-Feedback-Prompt': overallFeedbackPrompt ? encodeURIComponent(overallFeedbackPrompt) : '' 
+        }
       });
       setOverallFeedback(response.data.feedback);
       message.success('AI分析完成！');
@@ -252,8 +264,9 @@ const TestPaperPage = () => {
       let userAnswer = userAnswers[questionId];
       if (question.type === 'fill_in_the_blank' && typeof userAnswer === 'string') userAnswer = userAnswer.split('$$$');
       const apiKey = localStorage.getItem('api_key');
-      const generationModel = localStorage.getItem('generation_model');
-      const singleQuestionFeedbackPrompt = localStorage.getItem('single_question_feedback_prompt');
+      const evaluationModel = localStorage.getItem('evaluation_model');
+      const singleQuestionFeedbackPrompt = localStorage.getItem('singleQuestionFeedbackPrompt');
+      const apiProvider = localStorage.getItem('api_provider');
       if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); return; }
       let userAnswerPayload;
       switch (question.type) {
@@ -266,7 +279,12 @@ const TestPaperPage = () => {
       const currentResultId = storeResultId || resultId;
       if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', { result_id: parseInt(currentResultId, 10), question_id: question.id, user_answer: userAnswerPayload }, {
-        headers: { 'X-Api-Key': apiKey, 'X-Generation-Model': generationModel, 'X-Generation-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '' }
+        headers: { 
+          'X-Api-Key': apiKey, 
+          'X-Provider': apiProvider, 
+          'X-Evaluation-Model': evaluationModel, 
+          'X-Single-Question-Feedback-Prompt': singleQuestionFeedbackPrompt ? encodeURIComponent(singleQuestionFeedbackPrompt) : '' 
+        }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
       message.success(`题目 ${questionId} 的AI点评已生成！`);

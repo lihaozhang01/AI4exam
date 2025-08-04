@@ -34,7 +34,7 @@ const TestFormPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('apiKey');
+    const storedApiKey = localStorage.getItem('api_key');
     if (storedApiKey) {
       setApiKey(storedApiKey);
     } else {
@@ -76,7 +76,7 @@ const TestFormPage = () => {
       formData.append('source_text', knowledgeSource.sourceText);
       formData.append('config_json', JSON.stringify(config));
 
-      const storedApiKey = localStorage.getItem('apiKey');
+      const storedApiKey = localStorage.getItem('api_key');
       if (!storedApiKey) {
         message.error('请先在设置中填写您的API Key！');
         setIsModalOpen(true);
@@ -85,7 +85,16 @@ const TestFormPage = () => {
       }
 
       const apiProvider = localStorage.getItem('api_provider') || 'google';
-      const generationModel = localStorage.getItem('generation_model');
+      const generationModel = localStorage.getItem('generation_model') || ''; // Ensure it's a string
+
+      // [New] Add more specific error message for providers that require a model
+      if (['siliconflow', 'openai', 'anthropic', 'zhipuai'].includes(apiProvider) && !generationModel) {
+        message.error(`当前选择的服务商 (${apiProvider}) 需要指定一个生成模型，请在设置中配置！`);
+        setIsModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
       const generationPrompt = localStorage.getItem('generation_prompt') || '';
 
       const headers = {

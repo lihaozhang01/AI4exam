@@ -57,9 +57,10 @@ async def generate_test(
     source_file: Optional[UploadFile] = File(None),
     source_text: Optional[str] = Form(None),
     config_json: str = Form(...),
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
     generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
-    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
-    _: None = Depends(configure_genai)
+    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt")
 ):
     decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
     if not source_file and not source_text:
@@ -76,8 +77,21 @@ async def generate_test(
         knowledge_content += f"以下是用户输入内容：\n{text_content}\n"
     knowledge_content = knowledge_content.strip()
 
-    ai_response = await services.generate_test_from_ai(knowledge_content, config, generation_model, decoded_prompt)
-    db_test_paper = services.create_test_paper(db, source_content=knowledge_content, ai_response=ai_response)
+    ai_response = await services.generate_test_from_ai(
+        knowledge_content=knowledge_content, 
+        config=config, 
+        provider=provider,
+        api_key=api_key,
+        generation_model=generation_model, 
+        generation_prompt=decoded_prompt
+    )
+    db_test_paper = services.create_test_paper(
+        db,
+        source_content=knowledge_content,
+        config=config,  # [New] Pass config
+        generation_prompt=decoded_prompt,  # [New] Pass decoded_prompt
+        ai_response=ai_response
+    )
 
     questions_data = [
         schemas.QuestionModel(
@@ -97,9 +111,11 @@ async def generate_test(
 async def generate_stream_test(
     test_id: int,
     db: Session = Depends(get_db),
-    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
-    _: None = Depends(configure_genai)
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
+    generation_model: str = Header(..., alias="X-Generation-Model")
 ):
+    print(f"Received generation_model: {generation_model}")
     db_test_paper = services.get_test_paper_by_id(db, test_id)
     if not db_test_paper:
         raise HTTPException(status_code=404, detail="Test paper not found")
@@ -109,7 +125,12 @@ async def generate_stream_test(
     decoded_prompt = db_test_paper.generation_prompt
 
     stream_generator = services.generate_test_stream_from_ai(
-        knowledge_content, config, generation_model, decoded_prompt
+        knowledge_content=knowledge_content, 
+        config=config, 
+        provider=provider,
+        api_key=api_key,
+        generation_model=generation_model, 
+        generation_prompt=decoded_prompt
     )
 
     async def db_saving_stream_generator():

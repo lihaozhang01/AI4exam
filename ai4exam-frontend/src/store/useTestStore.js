@@ -119,10 +119,6 @@ const useTestStore = create(log((set, get) => {
     // ===================================================================
     // [核心修改] 在这里增加日志来追踪调用者
     setUserAnswers: (answers) => {
-      // 当 setUserAnswers 被调用时，打印传入的答案
-      console.warn('setUserAnswers was called! The provided answers are:', answers);
-      // 打印一个调用堆栈，告诉我们是哪个文件、哪一行代码调用了它
-      console.trace("Trace for setUserAnswers");
       set({ userAnswers: answers });
     },
     // ===================================================================

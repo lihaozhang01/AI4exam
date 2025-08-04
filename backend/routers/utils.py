@@ -1,11 +1,12 @@
 # routers/utils.py
 
 import logging
-import google.generativeai as genai
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
+import google.generativeai as genai
+from openai import AsyncOpenAI
 
-from dependencies import configure_genai
+from services import ai as services_ai
 
 router = APIRouter(
     tags=["Utilities"]
@@ -23,17 +24,20 @@ async def test_connectivity(
     provider: str = Header(..., alias="X-Provider")
 ):
     try:
-        # 根据 provider 配置 genai
-        configure_genai(api_key, provider)
-        
-        # 使用请求中指定的模型名称初始化模型
-        model = genai.GenerativeModel(request.model_name)
-        
-        # 生成简短内容以测试 API Key 和模型的有效性
-        model.generate_content("say hi")  # 发送一个简单的请求
+        client = services_ai.get_llm_client(provider, api_key)
+
+        if provider == 'google':
+            model = client.GenerativeModel(request.model_name)
+            model.generate_content("say hi")
+        else:
+            # For OpenAI-compatible clients
+            await client.chat.completions.create(
+                model=request.model_name,
+                messages=[{"role": "user", "content": "say hi"}],
+                max_tokens=10
+            )
         
         return {"message": "API Key is valid and connectivity is successful."}
     except Exception as e:
-        logger.error(f"Connectivity test failed for model {request.model_name}: {e}")
-        # 返回更详细的错误信息，帮助前端调试
+        logger.error(f"Connectivity test failed for model {request.model_name} with provider {provider}: {e}")
         raise HTTPException(status_code=400, detail=f"Connectivity test failed: {str(e)}")

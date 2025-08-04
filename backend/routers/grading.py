@@ -15,11 +15,22 @@ router = APIRouter(
 )
 
 @router.post("/grade-questions", response_model=schemas.GradeQuestionsResponse)
-async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = Depends(get_db)):
-    db_result, grading_results = services.grade_and_save_test(
+async def grade_questions(
+    request: schemas.GradeQuestionsRequest, 
+    db: Session = Depends(get_db),
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
+    evaluation_model: Optional[str] = Header(None, alias="X-Evaluation-Model"),
+    evaluation_prompt: Optional[str] = Header(None, alias="X-Evaluation-Prompt")
+):
+    decoded_prompt = urllib.parse.unquote(evaluation_prompt) if evaluation_prompt else None
+    db_result, grading_results = await services.grade_and_save_test(
         db=db,
-        test_id=int(request.test_id),
-        user_answers=request.answers
+        request=request,
+        provider=provider,
+        api_key=api_key,
+        evaluation_model=evaluation_model,
+        evaluation_prompt=decoded_prompt
     )
     return schemas.GradeQuestionsResponse(result_id=db_result.id, results=grading_results)
 
@@ -28,12 +39,13 @@ async def grade_questions(request: schemas.GradeQuestionsRequest, db: Session = 
 async def generate_overall_feedback(
     request: schemas.GenerateOverallFeedbackRequest, 
     db: Session = Depends(get_db), 
-    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
-    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
-    _: None = Depends(configure_genai)
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
+    evaluation_model: Optional[str] = Header(None, alias="X-Evaluation-Model"),
+    overall_feedback_prompt: Optional[str] = Header(None, alias="X-Overall-Feedback-Prompt")
 ):
-    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
-    feedback = await services.generate_and_save_overall_feedback(db, request, generation_model, decoded_prompt)
+    decoded_prompt = urllib.parse.unquote(overall_feedback_prompt) if overall_feedback_prompt else None
+    feedback = await services.generate_and_save_overall_feedback(db, request, provider, api_key, evaluation_model, decoded_prompt)
     return schemas.GenerateOverallFeedbackResponse(feedback=feedback)
 
 
@@ -41,22 +53,24 @@ async def generate_overall_feedback(
 async def generate_single_question_feedback(
     request: schemas.GenerateSingleQuestionFeedbackRequest, 
     db: Session = Depends(get_db), 
-    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
-    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
-    _: None = Depends(configure_genai)
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
+    evaluation_model: Optional[str] = Header(None, alias="X-Evaluation-Model"),
+    single_question_feedback_prompt: Optional[str] = Header(None, alias="X-Single-Question-Feedback-Prompt")
 ):
-    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
-    feedback = await services.generate_and_save_single_question_feedback(db, request, generation_model, decoded_prompt)
+    decoded_prompt = urllib.parse.unquote(single_question_feedback_prompt) if single_question_feedback_prompt else None
+    feedback = await services.generate_and_save_single_question_feedback(db, request, provider, api_key, evaluation_model, decoded_prompt)
     return schemas.GenerateSingleQuestionFeedbackResponse(feedback=feedback)
 
 
 @router.post("/evaluate-short-answer", response_model=schemas.EvaluateShortAnswerResponse)
 async def evaluate_short_answer(
     request: schemas.EvaluateShortAnswerRequest, 
-    generation_model: Optional[str] = Header(None, alias="X-Generation-Model"),
-    generation_prompt: Optional[str] = Header(None, alias="X-Generation-Prompt"),
-    _: None = Depends(configure_genai)
+    provider: str = Header(..., alias="X-Provider"),
+    api_key: str = Header(..., alias="X-Api-Key"),
+    evaluation_model: Optional[str] = Header(None, alias="X-Evaluation-Model"),
+    evaluation_prompt: Optional[str] = Header(None, alias="X-Evaluation-Prompt")
 ):
-    decoded_prompt = urllib.parse.unquote(generation_prompt) if generation_prompt else None
-    response = await services.evaluate_essay_with_ai(request, generation_model, decoded_prompt)
+    decoded_prompt = urllib.parse.unquote(evaluation_prompt) if evaluation_prompt else None
+    response = await services.evaluate_essay_with_ai(request, provider, api_key, evaluation_model, decoded_prompt)
     return response

@@ -40,9 +40,16 @@ const TestStreamingPage = () => {
 
     const streamTest = async () => {
       try {
-        const apiKey = localStorage.getItem('apiKey');
-        const headers = { 'Content-Type': 'application/json' };
+        const apiKey = localStorage.getItem('api_key');
+        const apiProvider = localStorage.getItem('api_provider'); // [New] Get apiProvider
+        const generationModel = localStorage.getItem('generation_model') || ''; // 从 localStorage 获取模型，确保是字符串
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream' // [New] Specify that we accept an event stream
+        };
         if (apiKey) headers['X-Api-Key'] = apiKey;
+        if (apiProvider) headers['X-Provider'] = apiProvider; // [New] Add X-Provider header
+        if (generationModel) headers['X-Generation-Model'] = generationModel; // 如果存在则添加到请求头
 
         const response = await fetch(`http://127.0.0.1:8000/generate-stream-test/${test_id}`, {
           method: 'GET',
@@ -95,27 +102,27 @@ const TestStreamingPage = () => {
     console.log('[DEBUG] 点击查看完整试卷前的store状态:', useTestStore.getState());
     console.log('[DEBUG] 当前streamQuestions:', useTestStore.getState().streamQuestions);
     console.log('[DEBUG] 当前userAnswers:', useTestStore.getState().userAnswers);
-    
+
     // 同步流式答题状态到完整试卷
     isNavigatingToFullPaper.current = true;
     const { userAnswers, setUserAnswers, streamQuestions } = useTestStore.getState();
-    
+
     // 合并流式答题状态到现有答案
     const updatedAnswers = { ...userAnswers };
-    
+
     // 遍历流式问题，将已回答的问题同步到全局答案
     streamQuestions.forEach(question => {
       // 从 userAnswers 中获取当前问题的答案（无论是否存在）
       updatedAnswers[question.id] = userAnswers[question.id];
     });
-    
+
     console.log('[DEBUG] 同步后的updatedAnswers:', updatedAnswers);
-    
+
     // 更新全局用户答案
     useTestStore.getState().setUserAnswers(updatedAnswers);
-    
+
     console.log('[DEBUG] 更新后的store状态:', useTestStore.getState());
-    
+
     // 跳转到完整试卷页面
     navigate(`/testpaper/${test_id}?from=streaming`);
   };
@@ -123,10 +130,10 @@ const TestStreamingPage = () => {
   const renderQuestionComponent = (question, index) => {
     if (!question) return null;
     const commonProps = { question, index };
-    
+
     // 添加调试信息：每次渲染问题时打印当前答案
     const currentAnswer = useTestStore.getState().userAnswers[question.id];
-    
+
     switch (question.type) {
       case 'multiple_choice': return <MultipleChoiceQuestion {...commonProps} />;
       case 'fill_in_the_blank': return <FillInTheBlankQuestion {...commonProps} />;
