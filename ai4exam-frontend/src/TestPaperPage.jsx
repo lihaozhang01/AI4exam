@@ -44,6 +44,7 @@ const buildAnswersPayload = (userAnswers, questions) => {
 };
 
 const TestPaperPage = () => {
+  const [messageApi, contextHolder] = message.useMessage(); // 1. 使用 antd 的 message hook
   const { testId, resultId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ const TestPaperPage = () => {
 
       } catch (error) {
         console.error("获取新试卷失败:", error.response ? error.response.data : error.message);
-        message.error("获取新试卷失败，请返回首页重试。" + (error.response ? `(${error.response.status})` : ''));
+        messageApi.error("获取新试卷失败，请返回首页重试。" + (error.response ? `(${error.response.status})` : ''));
         navigate('/');
       } finally {
         setIsLoading(false);
@@ -162,7 +163,7 @@ const TestPaperPage = () => {
         setOriginalTestId(result.test_paper_id);
       } catch (error) {
         console.error("获取历史试卷失败:", error.response ? error.response.data : error.message);
-        message.error("获取历史试卷失败，请稍后重试。" + (error.response ? `(${error.response.status})` : ''));
+        messageApi.error("获取历史试卷失败，请稍后重试。" + (error.response ? `(${error.response.status})` : ''));
         navigate('/history');
       } finally {
         setIsLoading(false);
@@ -186,14 +187,14 @@ const TestPaperPage = () => {
     // This function remains unchanged.
     setIsLoading(true);
     try {
-      if (!testData || !testData.test_id) { message.error("试卷信息不完整，无法提交。请返回首页重试。"); return; }
-      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
+      if (!testData || !testData.test_id) { messageApi.error("试卷信息不完整，无法提交。请返回首页重试。"); return; }
+      if (!testData || !testData.questions) { messageApi.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const allAnswers = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
       const apiProvider = localStorage.getItem('api_provider');
       const evaluationModel = localStorage.getItem('evaluation_model');
       const evaluationPrompt = localStorage.getItem('evaluationPrompt');
-      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
+      if (!apiKey) { messageApi.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/grade-questions', { test_id: testData.test_id, answers: allAnswers }, {
         headers: {
           'X-Api-Key': apiKey,
@@ -205,10 +206,10 @@ const TestPaperPage = () => {
       setGradingResults(response.data.results, response.data.result_id);
       setSubmissionStatus('submitted_and_showing_answers');
       navigate(`/history/${response.data.result_id}`, { replace: true });
-      message.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
+      messageApi.success('Objective questions have been auto-graded! You can now request detailed AI feedback.');
     } catch (error) {
       console.error("Error submitting answers:", error.response ? error.response.data : error.message);
-      message.error("提交答案失败，请检查网络连接或稍后再试。" + (error.response ? `(${error.response.status})` : ''));
+      messageApi.error("提交答案失败，请检查网络连接或稍后再试。" + (error.response ? `(${error.response.status})` : ''));
     } finally {
       setIsLoading(false);
     }
@@ -224,18 +225,18 @@ const TestPaperPage = () => {
   const handleRequestAiFeedback = async () => {
     // This function remains unchanged.
     setIsLoading(true);
-    message.info('正在请求AI对整卷进行分析，请稍候...');
+    messageApi.info('正在请求AI对整卷进行分析，请稍候...');
     try {
-      if (!testData || !testData.test_id) { message.error("试卷信息不完整，无法请求分析。"); return; }
-      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
+      if (!testData || !testData.test_id) { messageApi.error("试卷信息不完整，无法请求分析。"); return; }
+      if (!testData || !testData.questions) { messageApi.error('试卷数据加载失败，请刷新页面重试'); setIsLoading(false); return; }
       const answersToSend = buildAnswersPayload(userAnswers, testData.questions);
       const apiKey = localStorage.getItem('api_key');
       const apiProvider = localStorage.getItem('api_provider');
       const evaluationModel = localStorage.getItem('evaluation_model');
       const overallFeedbackPrompt = localStorage.getItem('overallFeedbackPrompt');
-      if (!apiKey) { message.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
+      if (!apiKey) { messageApi.error('请先在右上角设置中填写您的API Key！'); setIsLoading(false); return; }
       const currentResultId = storeResultId || resultId;
-      if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); setIsLoading(false); return; }
+      if (!currentResultId) { messageApi.error("无法获取到试卷结果ID，请先提交答案。"); setIsLoading(false); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-overall-feedback', { result_id: parseInt(currentResultId, 10), test_id: testData.test_id, answers: answersToSend }, {
         headers: {
           'X-Api-Key': apiKey,
@@ -245,10 +246,10 @@ const TestPaperPage = () => {
         }
       });
       setOverallFeedback(response.data.feedback);
-      message.success('AI分析完成！');
+      messageApi.success('AI分析完成！');
     } catch (error) {
       console.error("Error requesting AI feedback:", error.response ? error.response.data : error.message);
-      message.error("请求AI反馈失败，请稍后再试。" + (error.response ? `(${error.response.status})` : ''));
+      messageApi.error("请求AI反馈失败，请稍后再试。" + (error.response ? `(${error.response.status})` : ''));
     } finally {
       setIsLoading(false);
     }
@@ -256,28 +257,28 @@ const TestPaperPage = () => {
 
   const handleRequestSingleQuestionFeedback = async (questionId) => {
     // This function remains unchanged.
-    message.info(`正在为题目 ${questionId} 请求AI点评...`);
+    messageApi.info(`正在为题目 ${questionId} 请求AI点评...`);
     try {
-      if (!testData || !testData.questions) { message.error('试卷数据加载失败，请刷新页面重试'); return; }
+      if (!testData || !testData.questions) { messageApi.error('试卷数据加载失败，请刷新页面重试'); return; }
       const question = testData.questions.find(q => q.id === questionId);
-      if (!question) { message.error('题目不存在'); return; }
+      if (!question) { messageApi.error('题目不存在'); return; }
       let userAnswer = userAnswers[questionId];
       if (question.type === 'fill_in_the_blank' && typeof userAnswer === 'string') userAnswer = userAnswer.split('$$$');
       const apiKey = localStorage.getItem('api_key');
       const evaluationModel = localStorage.getItem('evaluation_model');
       const singleQuestionFeedbackPrompt = localStorage.getItem('singleQuestionFeedbackPrompt');
       const apiProvider = localStorage.getItem('api_provider');
-      if (!apiKey) { message.error('请先在新建页面的右下角设置中填写您的API Key！'); return; }
+      if (!apiKey) { messageApi.error('请先在新建页面的右下角设置中填写您的API Key！'); return; }
       let userAnswerPayload;
       switch (question.type) {
         case 'single_choice': userAnswerPayload = { question_type: 'single_choice', answer_index: userAnswer }; break;
         case 'multiple_choice': userAnswerPayload = { question_type: 'multiple_choice', answer_indices: userAnswer || [] }; break;
         case 'fill_in_the_blank': userAnswerPayload = { question_type: 'fill_in_the_blank', answer_texts: userAnswer || [] }; break;
         case 'essay': userAnswerPayload = { question_type: 'essay', answer_text: userAnswer || "" }; break;
-        default: message.error(`Unsupported question type: ${question.type}`); return;
+        default: messageApi.error(`Unsupported question type: ${question.type}`); return;
       }
       const currentResultId = storeResultId || resultId;
-      if (!currentResultId) { message.error("无法获取到试卷结果ID，请先提交答案。"); return; }
+      if (!currentResultId) { messageApi.error("无法获取到试卷结果ID，请先提交答案。"); return; }
       const response = await axios.post('http://127.0.0.1:8000/generate-single-question-feedback', { result_id: parseInt(currentResultId, 10), question_id: question.id, user_answer: userAnswerPayload }, {
         headers: {
           'X-Api-Key': apiKey,
@@ -287,10 +288,10 @@ const TestPaperPage = () => {
         }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
-      message.success(`题目 ${questionId} 的AI点评已生成！`);
+      messageApi.success(`题目 ${questionId} 的AI点评已生成！`);
     } catch (error) {
       console.error('Error requesting single question feedback:', error.response ? error.response.data : error.message);
-      message.error('请求该题反馈失败，请稍后再试。' + (error.response ? `(${error.response.status})` : ''));
+      messageApi.error('请求该题反馈失败，请稍后再试。' + (error.response ? `(${error.response.status})` : ''));
     }
   };
 
@@ -338,6 +339,7 @@ const TestPaperPage = () => {
   console.log('[DEBUG] TestPaperPage testData:', testData);
   return (
     <div className="test-paper-container">
+      {contextHolder}
       <div className="test-paper-header">
         <div></div>
         <div style={{ textAlign: 'center' }}>
@@ -354,7 +356,7 @@ const TestPaperPage = () => {
         {renderContent()}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           {submissionStatus === 'in_progress' && (
-            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading}> 提交并查看答案 </Button>
+            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading} className="submit-and-show-answers-btn"> 提交并查看答案 </Button>
           )}
           {submissionStatus === 'submitted_and_showing_answers' && (
             <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>

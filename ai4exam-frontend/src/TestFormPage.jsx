@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { message, Spin, Button, Tooltip } from 'antd';
+import { App, Spin, Button, Tooltip, message } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
@@ -12,7 +12,10 @@ import ActionButtons from './components/TestForm/ActionButtons';
 import './TestFormPage.css';
 import snowLeopardIcon from './assets/knowledge_bao.png'; // 导入图片
 
+
+
 const TestFormPage = () => {
+  const [messageApi, contextHolder] = message.useMessage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [knowledgeSource, setKnowledgeSource] = useState({
@@ -43,10 +46,21 @@ const TestFormPage = () => {
   }, []);
 
   const handleGenerate = async () => {
-    const testPaperStyle = localStorage.getItem('test_paper_style') || 'traditional';
-    if (!knowledgeSource.sourceText && knowledgeSource.fileList.length === 0) {
-      message.error('请提供知识源，可以是文本或文件。');
+    // 增强的知识源验证
+    if (!knowledgeSource.sourceText.trim() && knowledgeSource.fileList.length === 0) {
+      messageApi.error('请提供知识源，可以是文本描述或上传文件！');
       return;
+    }
+
+    const testPaperStyle = localStorage.getItem('test_paper_style') || 'traditional';
+    
+    // 文件大小检查（限制10MB）
+    if (knowledgeSource.fileList.length > 0) {
+      const file = knowledgeSource.fileList[0].originFileObj;
+      if (file.size > 10 * 1024 * 1024) {
+        messageApi.error('文件大小不能超过10MB，请选择较小的文件！');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -57,13 +71,19 @@ const TestFormPage = () => {
         .map(([type, count]) => ({ type, count }));
 
       if (question_config.length === 0) {
-        message.error('请至少选择一种题型并设置数量大于0！');
+        messageApi.error('请至少选择一种题型并设置数量大于0！');
         setIsLoading(false);
         return;
       }
 
+      // 检查题目总数是否合理
+      const totalQuestions = question_config.reduce((sum, item) => sum + item.count, 0);
+      if (totalQuestions > 50) {
+        messageApi.warning('题目总数建议不超过50道，当前设置可能生成时间过长！');
+      }
+
       const config = {
-        description: testConfig.description,
+        description: testConfig.description.trim(),
         question_config,
         difficulty: testConfig.difficulty,
       };
@@ -72,25 +92,40 @@ const TestFormPage = () => {
       if (knowledgeSource.fileList.length > 0) {
         formData.append('source_file', knowledgeSource.fileList[0].originFileObj);
       }
-      // Always append source_text, even if it's an empty string, to match backend logic
-      formData.append('source_text', knowledgeSource.sourceText);
+      formData.append('source_text', knowledgeSource.sourceText.trim());
       formData.append('config_json', JSON.stringify(config));
 
       const storedApiKey = localStorage.getItem('api_key');
       if (!storedApiKey) {
-        message.error('请先在设置中填写您的API Key！');
+        messageApi.error('请先在设置中填写您的API Key！');
+        setIsModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // API Key格式验证
+      if (storedApiKey.length < 10) {
+        messageApi.error('API Key格式不正确，请检查您的API Key是否完整！');
         setIsModalOpen(true);
         setIsLoading(false);
         return;
       }
 
       const apiProvider = localStorage.getItem('api_provider') || 'google';
-      const generationModel = localStorage.getItem('generation_model') || ''; // Ensure it's a string
+      const generationModel = localStorage.getItem('generation_model') || '';
 
-      // [New] Add more specific error message for providers that require a model
-      if (['siliconflow', 'openai', 'anthropic', 'zhipuai'].includes(apiProvider) && !generationModel) {
-        message.error(`当前选择的服务商 (${apiProvider}) 需要指定一个生成模型，请在设置中配置！`);
+      // 增强的模型验证逻辑
+      const providersRequireModel = ['siliconflow', 'openai', 'anthropic', 'zhipuai', 'deepseek'];
+      if (providersRequireModel.includes(apiProvider) && !generationModel.trim()) {
+        messageApi.error(`当前选择的服务商 "${apiProvider}" 需要指定一个生成模型，请在设置中配置！`);
         setIsModalOpen(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // 检查网络连接
+      if (!navigator.onLine) {
+        messageApi.error('网络连接已断开，请检查您的网络连接！');
         setIsLoading(false);
         return;
       }
@@ -99,13 +134,13 @@ const TestFormPage = () => {
 
       const headers = {
         'Content-Type': 'multipart/form-data',
-        'X-Api-Key': storedApiKey,
+        'X-Api-Key': storedApiKey.trim(),
         'X-Provider': apiProvider,
-        'X-Generation-Model': generationModel,
+        'X-Generation-Model': generationModel.trim(),
       };
 
-      if (generationPrompt) {
-        headers['X-Generation-Prompt'] = encodeURIComponent(generationPrompt);
+      if (generationPrompt.trim()) {
+        headers['X-Generation-Prompt'] = encodeURIComponent(generationPrompt.trim());
       }
 
       if (testPaperStyle === 'card') {
@@ -113,22 +148,65 @@ const TestFormPage = () => {
         try {
           const response = await axios.post('http://127.0.0.1:8000/tests', formData, { headers });
           const test_id = response.data.test_id;
-          message.success('正在准备生成试卷...');
+          messageApi.success('正在准备生成试卷...');
           navigate(`/test-streaming/${test_id}`);
         } catch (error) {
           console.error("API Error during test creation:", error);
-          message.error(error.response?.data?.detail || '创建试卷失败，请检查网络或联系管理员。');
+          
+          // 增强的错误提示
+          let errorMessage = '创建试卷失败';
+          if (error.response?.status === 401) {
+            errorMessage = 'API Key无效或已过期，请检查您的API Key！';
+          } else if (error.response?.status === 429) {
+            errorMessage = '请求过于频繁，请稍后再试！';
+          } else if (error.response?.status === 400) {
+            errorMessage = error.response?.data?.detail || '请求参数有误，请检查输入内容！';
+          } else if (error.code === 'ECONNREFUSED') {
+            errorMessage = '无法连接到服务器，请检查服务器是否运行！';
+          } else if (!navigator.onLine) {
+            errorMessage = '网络连接已断开，请检查您的网络！';
+          } else {
+            errorMessage = error.response?.data?.detail || '服务器繁忙，请稍后再试！';
+          }
+          
+          messageApi.error(errorMessage);
         }
       } else {
         // 传统模式，调用普通接口
-        const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });
-        setTestData(response.data);
-        message.success('试卷生成成功！正在跳转...');
-        navigate(`/testpaper/${response.data.test_id}`);
+        try {
+          const response = await axios.post('http://127.0.0.1:8000/generate-test', formData, { headers });
+          setTestData(response.data);
+          messageApi.success('试卷生成成功！正在跳转...');
+          navigate(`/testpaper/${response.data.test_id}`);
+        } catch (error) {
+          console.error("API Error:", error);
+          
+          // 增强的错误提示
+          let errorMessage = '生成试卷失败';
+          if (error.response?.status === 401) {
+            errorMessage = 'API Key无效或已过期，请检查您的API Key！';
+          } else if (error.response?.status === 429) {
+            errorMessage = '请求过于频繁，请稍后再试！';
+          } else if (error.response?.status === 400) {
+            errorMessage = error.response?.data?.detail || '请求参数有误，请检查输入内容！';
+          } else if (error.response?.status === 413) {
+            errorMessage = '上传的文件过大，请选择较小的文件！';
+          } else if (error.code === 'ECONNREFUSED') {
+            errorMessage = '无法连接到服务器，请检查服务器是否运行！';
+          } else if (!navigator.onLine) {
+            errorMessage = '网络连接已断开，请检查您的网络！';
+          } else if (error.response?.status >= 500) {
+            errorMessage = '服务器内部错误，请稍后再试！';
+          } else {
+            errorMessage = error.response?.data?.detail || '生成试卷失败，请稍后再试！';
+          }
+          
+          messageApi.error(errorMessage);
+        }
       }
     } catch (error) {
-      console.error("API Error:", error);
-      message.error(error.response?.data?.detail || '生成试卷失败，请检查API Key或联系管理员。');
+      console.error("Unexpected Error:", error);
+      messageApi.error('发生未知错误，请刷新页面后重试！');
     } finally {
       setIsLoading(false);
     }
@@ -140,6 +218,7 @@ const TestFormPage = () => {
 
   return (
     <div className="container">
+      {contextHolder}
       <a className="history-link" onClick={handleHistoryClick}>
         查看历史试卷→
       </a>

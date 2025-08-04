@@ -189,9 +189,7 @@ const TestStreamingPage = () => {
         </div>
 
         {isStreamCompleted && (
-          <Button type="primary" size="large" className="go-to-fullpaper" onClick={handleViewPaper}>
-            查看完整试卷
-          </Button>
+          <Button type="primary" size="large" onClick={handleViewPaper} className="go-to-fullpaper"> 查看完整试卷 </Button>
         )}
       </div>
     </div>

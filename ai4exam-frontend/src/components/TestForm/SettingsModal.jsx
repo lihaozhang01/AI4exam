@@ -121,7 +121,8 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
               <Select onChange={handleProviderChange}>
                 <Option value="google">Google</Option>
                 <Option value="siliconflow">硅基流动</Option>
-                <Option value="volcengine">火山引擎</Option>
+                <Option value="deepseek">Deepseek</Option>
+                <Option value="aliyun">阿里云</Option>
               </Select>
             </Form.Item>
             <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: '请输入API Key' }]}>
@@ -137,8 +138,13 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
                   <Option value="gemini-2.5-flash">gemini-2.5-flash</Option>
                   <Option value="gemini-2.5-pro">gemini-2.5-pro</Option>
                 </Select>
+              ) : apiProvider === 'deepseek' ? (
+                <Select placeholder="选择Deepseek模型">
+                  <Option value="deepseek-chat">Deepseek V3</Option>
+                  <Option value="deepseek-reasoner">Deepseek R1</Option>
+                </Select>
               ) : (
-                <Input placeholder="请输入模型ID，例如 Qwen/Qwen2-7B-Instruct" />
+                <Input placeholder="请参考模型提供商要求输入模型ID" />
               )}
             </Form.Item>
             <Form.Item name="evaluation_model" label="点评模型">
@@ -151,8 +157,13 @@ const SettingsModal = ({ isOpen, onOk, onCancel }) => {
                   <Option value="gemini-2.5-flash">gemini-2.5-flash</Option>
                   <Option value="gemini-2.5-pro">gemini-2.5-pro</Option>
                 </Select>
+              ) : apiProvider === 'deepseek' ? (
+                <Select placeholder="选择Deepseek模型">
+                  <Option value="deepseek-chat">Deepseek V3</Option>
+                  <Option value="deepseek-reasoner">Deepseek R1</Option>
+                </Select>
               ) : (
-                <Input placeholder="请输入模型ID，例如 Qwen/Qwen2-7B-Instruct" />
+                    <Input placeholder="请参考模型提供商要求输入模型ID" />
               )}
 
             </Form.Item>

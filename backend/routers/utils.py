@@ -31,11 +31,14 @@ async def test_connectivity(
             model.generate_content("say hi")
         else:
             # For OpenAI-compatible clients
-            await client.chat.completions.create(
-                model=request.model_name,
-                messages=[{"role": "user", "content": "say hi"}],
-                max_tokens=10
-            )
+            params = {
+                "model": request.model_name,
+                "messages": [{"role": "user", "content": "say hi"}],
+                "max_tokens": 10
+            }
+            if provider == 'aliyun' and 'qwen3' in request.model_name:
+                params['extra_body'] = {"enable_thinking": False}
+            await client.chat.completions.create(**params)
         
         return {"message": "API Key is valid and connectivity is successful."}
     except Exception as e:

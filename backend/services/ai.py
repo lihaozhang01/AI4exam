@@ -26,8 +26,10 @@ def get_llm_client(provider: str, api_key: str, generation_model: str = None):
         # Special handling for SiliconFlow to inject model into the base_url if needed
         # This is a placeholder for any such logic. As of now, it uses a generic client.
         return AsyncOpenAI(api_key=api_key, base_url="https://api.siliconflow.cn/v1")
-    elif provider == 'volcengine':
-        return AsyncOpenAI(api_key=api_key, base_url="https://api.volcengineapi.com/v1") 
+    elif provider == 'deepseek':
+        return AsyncOpenAI(api_key=api_key, base_url="https://api.deepseek.cn/v1") 
+    elif provider == 'aliyun':
+        return AsyncOpenAI(api_key=api_key, base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
     else:
         raise HTTPException(status_code=400, detail=f"Unsupported LLM provider: {provider}")
 
@@ -81,11 +83,17 @@ async def generate_test_stream_from_ai(
 
             try:
                 client = get_llm_client(provider, api_key)
-                stream = await client.chat.completions.create(
-                    model=generation_model, 
-                    messages=messages,
-                    stream=True
-                )
+
+                params = {
+                    "model": generation_model, 
+                    "messages": messages,
+                    "stream": True
+                }
+                # For Aliyun, disable thinking for non-streaming calls, might need adjustment for streaming
+                if provider == 'aliyun' and 'qwen3' in model_name:
+                    params['extra_body'] = {"enable_thinking": True} # Let's assume streaming needs it to be true, can be configured
+
+                stream = await client.chat.completions.create(**params)
             except Exception as e:
                 print(f"---[AI_SERVICE_ERROR]---")
                 print(f"Error calling SiliconFlow API: {e}")
@@ -184,11 +192,16 @@ async def generate_test_from_ai(
                 {"role": "user", "content": prompt} # Re-using the fully formatted prompt for simplicity
             ]
             client = get_llm_client(provider, api_key)
-            response = await client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                stream=False
-            )
+
+            params = {
+                "model": model_name,
+                "messages": messages,
+                "stream": False
+            }
+            if provider == 'aliyun' and 'qwen3' in model_name:
+                params['extra_body'] = {"enable_thinking": False}
+
+            response = await client.chat.completions.create(**params)
             response_text = response.choices[0].message.content
 
         return _extract_json_from_ai_response(response_text)
@@ -209,7 +222,15 @@ async def get_overall_feedback_from_ai(graded_info: List[Dict], provider: str, a
             return response.text
         else: # OpenAI compatible
             messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
-            response = await client.chat.completions.create(model=model_name, messages=messages, stream=False)
+            params = {
+                "model": model_name,
+                "messages": messages,
+                "stream": False
+            }
+            if provider == 'aliyun' and 'qwen3' in model_name:
+                params['extra_body'] = {"enable_thinking": False}
+
+            response = await client.chat.completions.create(**params)
             return response.choices[0].message.content
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
@@ -251,7 +272,15 @@ async def get_single_question_feedback_from_ai(question: models.DBQuestion, user
             return response.text
         else: # OpenAI compatible
             messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
-            response = await client.chat.completions.create(model=model_name, messages=messages, stream=False)
+            params = {
+                "model": model_name,
+                "messages": messages,
+                "stream": False
+            }
+            if provider == 'aliyun' and 'qwen3' in model_name:
+                params['extra_body'] = {"enable_thinking": False}
+
+            response = await client.chat.completions.create(**params)
             return response.choices[0].message.content
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI feedback generation failed: {e}")
@@ -272,7 +301,15 @@ async def evaluate_essay_with_ai(request: schemas.EvaluateShortAnswerRequest, pr
             response_text = response.text
         else: # OpenAI compatible
             messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
-            response = await client.chat.completions.create(model=model_name, messages=messages, stream=False)
+            params = {
+                "model": model_name,
+                "messages": messages,
+                "stream": False
+            }
+            if provider == 'aliyun' and 'qwen3' in model_name:
+                params['extra_body'] = {"enable_thinking": False}
+
+            response = await client.chat.completions.create(**params)
             response_text = response.choices[0].message.content
         
         ai_response_data = _extract_json_from_ai_response(response_text)

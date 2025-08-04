@@ -100,3 +100,13 @@
   margin: 0 auto;
   line-height: 1.6;
 }
+
+.submit-and-show-answers-btn {
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+}
+
+.submit-and-show-answers-btn:hover {
+  background-color: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}

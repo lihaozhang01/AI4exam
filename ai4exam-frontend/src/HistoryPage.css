@@ -154,7 +154,7 @@ html {
 }
 
 .history-back-link:hover {
-  color: var(--accent-color);
+  color: var(--accent-color)!important;
   /* 悬停时变为主题色 */
 }
 
@@ -185,7 +185,7 @@ html {
 }
 
 .go-to-generate-btn {
-  background-color: var(--accent-color);
+  background-color: var(--accent-color)!important;
   color: white;
   border: none;
   padding: 0.8rem 2.5rem;
@@ -193,7 +193,7 @@ html {
   font-weight: 500;
   border-radius: 50px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease!important;
   letter-spacing: 1px;
   box-shadow: 0 2px 8px rgba(138, 176, 171, 0.4);
   text-decoration: none;
@@ -316,7 +316,7 @@ html {
   background: none;
   font-size: 1.1rem;
   font-weight: 500;
-  color: var(--secondary-text);
+  color: var(--secondary-text)!important;
   padding: 0.8rem 1.5rem;
   border-radius: 8px 8px 0 0;
   position: relative;
@@ -330,13 +330,13 @@ html {
   left: 0;
   right: 0;
   height: 2px;
-  background-color: var(--accent-color);
+  background-color: var(--accent-color)!important;
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
 
 .tab-controls .ant-btn.active {
-  color: var(--accent-color);
+  color: var(--accent-color)!important;
 }
 
 .tab-controls .ant-btn.active::after {

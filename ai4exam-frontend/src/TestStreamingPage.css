@@ -1,23 +1,13 @@
 /* TestStreamingPage.css */
 
 .go-to-fullpaper {
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  padding: 0.8rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(138, 176, 171, 0.4);
-  text-decoration: none;
-  /* 移除 Link 组件的下划线 */
-  display: inline-block;
-  /* 让 Link 组件表现得像按钮 */
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
 }
-
+.go-to-fullpaper:hover {
+  background-color: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
 .test-streaming-page {
   display: flex;
   flex-direction: column;

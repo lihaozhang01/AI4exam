@@ -1,27 +1,32 @@
 // src/App.jsx
-
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { App as AntApp } from 'antd'; // 引入 Ant Design 的 App 组件
 import 'antd/dist/reset.css';
 import TestPaperPage from './TestPaperPage';
-// 引入我们将要创建的真实表单页面
 import TestFormPage from './TestFormPage';
-import HistoryPage from './HistoryPage'; // 引入历史页面
-import TestStreamingPage from './TestStreamingPage'; // 引入流式页面
+import HistoryPage from './HistoryPage';
+import TestStreamingPage from './TestStreamingPage';
 
-// 试卷页的占位符
+// Root component that includes AntApp for context
+const AppRoot = () => (
+  <div style={{ minHeight: '100vh', width: '100vw' }}>
+    <Routes>
+      <Route path="/" element={<TestFormPage />} />
+      <Route path="/history" element={<HistoryPage />} />
+      <Route path="/testpaper/:testId" element={<TestPaperPage />} />
+      <Route path="/history/:resultId" element={<TestPaperPage />} />
+      <Route path="/test-streaming/:test_id" element={<TestStreamingPage />} />
+    </Routes>
+  </div>
+);
 
+// Main App component wrapped with AntApp
 function App() {
   return (
-    <div style={{ minHeight: '100vh', width: '100vw' }}>
-      <Routes>
-        <Route path="/" element={<TestFormPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/testpaper/:testId" element={<TestPaperPage />} />
-        <Route path="/history/:resultId" element={<TestPaperPage />} />
-        <Route path="/test-streaming/:test_id" element={<TestStreamingPage />} />
-      </Routes>
-    </div>
+    <AntApp>
+      <AppRoot />
+    </AntApp>
   );
 }
 

@@ -19,9 +19,10 @@ def configure_genai(api_key: str, provider: str):
     client_options = None
     if provider == 'siliconflow':
         client_options = {"base_url": "https://api.siliconflow.cn/v1"}
-    elif provider == 'volcengine':
-        # 火山引擎的 base_url 可能需要根据实际情况调整
-        client_options = {"base_url": "https://maas-api.ml-platform-cn-beijing.volces.com/v1"}
+    elif provider == 'aliyun':
+        client_options = {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"}
+    elif provider == 'deepseek':
+        client_options = {"base_url": "https://api.deepseek.cn/v1"}
 
     try:
         genai.configure(

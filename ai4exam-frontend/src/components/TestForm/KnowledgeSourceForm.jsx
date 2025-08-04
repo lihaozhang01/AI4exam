@@ -60,7 +60,7 @@ const KnowledgeSourceForm = ({ source, onSourceChange }) => {
           <>
             <p className="upload-icon"><CloudUploadOutlined /></p>
             <p className="upload-text">将文件拖拽至此，或点击选择</p>
-            <p className="upload-text-small">支持 PDF, DOCX, TXT</p>
+            <p className="upload-text-small">仅支持DOCX，TXT，Markdown等文本文件</p>
           </>
         )}
       </Dragger>
