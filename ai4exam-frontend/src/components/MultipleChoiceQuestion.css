@@ -38,3 +38,26 @@
   line-height: 1.6;
   color: var(--primary-text);
 }
+/* 修改 Ant Design Checkbox 组件的选中颜色和居中问题 */
+
+/* 覆盖选中状态下的边框和背景颜色 */
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* 覆盖悬停状态下的边框颜色 */
+.ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-checkbox:hover .ant-checkbox-inner,
+.ant-checkbox-input:focus+.ant-checkbox-inner {
+  border-color: var(--accent-color) !important;
+}
+
+/* 调整选中对号的位置，使其居中 */
+.ant-checkbox-checked .ant-checkbox-inner::after {
+  transform: rotate(45deg) scale(1) translate(-50%, -50%) !important;
+  left: 50% !important;
+  top: 50% !important;
+  border-color: #fff !important;
+  /* 对号颜色设置为白色，与背景形成对比 */
+}

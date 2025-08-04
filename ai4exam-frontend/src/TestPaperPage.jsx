@@ -103,7 +103,6 @@ const TestPaperPage = () => {
               const streamQuestionId = correspondingStreamQuestion.id;
               // 在流式答案中用这个ID查找对应的答案
               const answerForThisQuestion = streamAnswers[streamQuestionId];
-
               // 如果找到了答案，就把它赋给新题目的ID (例如 '123')
               if (answerForThisQuestion !== undefined) {
                 answersToKeep[newQuestion.id] = answerForThisQuestion;
@@ -257,7 +256,7 @@ const TestPaperPage = () => {
 
   const handleRequestSingleQuestionFeedback = async (questionId) => {
     // This function remains unchanged.
-    messageApi.info(`正在为题目 ${questionId} 请求AI点评...`);
+    messageApi.info(`正在为题目请求AI点评...`);
     try {
       if (!testData || !testData.questions) { messageApi.error('试卷数据加载失败，请刷新页面重试'); return; }
       const question = testData.questions.find(q => q.id === questionId);
@@ -288,7 +287,7 @@ const TestPaperPage = () => {
         }
       });
       setSingleQuestionFeedback(questionId, response.data.feedback);
-      messageApi.success(`题目 ${questionId} 的AI点评已生成！`);
+      messageApi.success(`该题的AI点评已生成！`);
     } catch (error) {
       console.error('Error requesting single question feedback:', error.response ? error.response.data : error.message);
       messageApi.error('请求该题反馈失败，请稍后再试。' + (error.response ? `(${error.response.status})` : ''));

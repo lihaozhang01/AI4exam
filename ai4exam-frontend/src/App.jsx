@@ -1,7 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { App as AntApp } from 'antd'; // 引入 Ant Design 的 App 组件
+import { App as AntApp, ConfigProvider } from 'antd'; // 导入 ConfigProvider
 import 'antd/dist/reset.css';
 import TestPaperPage from './TestPaperPage';
 import TestFormPage from './TestFormPage';
@@ -21,12 +21,22 @@ const AppRoot = () => (
   </div>
 );
 
-// Main App component wrapped with AntApp
+// Main App component wrapped with ConfigProvider and AntApp
 function App() {
   return (
-    <AntApp>
-      <AppRoot />
-    </AntApp>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#709a94', // 设定你的灰绿色主色调
+          colorSuccess: '#88c0b7', // 成功色也用灰绿色
+          // 其他 token 变量可以按需修改
+        },
+      }}
+    >
+      <AntApp>
+        <AppRoot />
+      </AntApp>
+    </ConfigProvider>
   );
 }
 
