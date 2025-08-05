@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useRef } from 'react'; // 1. 引入 useRef
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
-import { Empty, Button, Divider, message, Alert, Spin, Space } from 'antd';
+import { Empty, Button, Divider, message, Alert, Spin, Space, Switch } from 'antd';
+import { UpOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
 
@@ -69,6 +70,9 @@ const TestPaperPage = () => {
   } = useTestStore();
 
   const [originalTestId, setOriginalTestId] = useState(null);
+  const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const scrollableContentRef = useRef(null);
   const effectRan = useRef(false);
 
   useEffect(() => {
@@ -181,6 +185,31 @@ const TestPaperPage = () => {
       effectRan.current = true;
     }
   }, [resultId, testId, navigate, searchParams, setTestData, setTestForHistory, setUserAnswers, setIsLoading, setGradingResults, setOverallFeedback, setSubmissionStatus, setSingleQuestionFeedback, reset]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // 监听整个页面的滚动
+      if (window.scrollY > 300) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    // 清理函数
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []); // 空依赖数组意味着这个 effect 只在组件挂载和卸载时运行一次
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth' // 平滑滚动
+    });
+  };
 
   const handleSubmitAndShowAnswers = async () => {
     // This function remains unchanged.
@@ -300,7 +329,15 @@ const TestPaperPage = () => {
         {overallFeedback && (
           <Alert message="AI 总结与点评" description={<MarkdownRenderer>{overallFeedback}</MarkdownRenderer>} type="info" showIcon style={{ marginBottom: '24px' }} closable onClose={() => setOverallFeedback(null)} />
         )}
-        {testData.questions.map((question, index) => (
+        {testData.questions
+          .filter(question => {
+            if (!showOnlyIncorrect || submissionStatus !== 'submitted_and_showing_answers') {
+              return true; // 如果不要求只看错题，或者还没提交，则显示所有题目
+            }
+            const result = gradingResults?.find(r => r.question_id === question.id);
+            return result && result.is_correct === false; // 只显示被标记为错误并且有批改结果的题目
+          })
+          .map((question, index) => (
           <div key={question.id}>
             {(() => {
               const result = gradingResults?.find(r => r.question_id === question.id);
@@ -350,8 +387,16 @@ const TestPaperPage = () => {
           <Link to="/history" className="paper-to-history">查看历史试卷→</Link>
         </div>
       </div>
-      <div className="scrollable-content">
-        <Divider />
+      <div className="scrollable-content" ref={scrollableContentRef}>
+        {submissionStatus === 'submitted_and_showing_answers' && (
+          <div style={{ textAlign: 'center', margin: '20px 0' }}>
+            <Switch 
+              checked={showOnlyIncorrect} 
+              onChange={setShowOnlyIncorrect} 
+            />
+            <span style={{ marginLeft: '8px' }}>只看错题</span>
+          </div>
+        )}
         {renderContent()}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           {submissionStatus === 'in_progress' && (
@@ -368,6 +413,12 @@ const TestPaperPage = () => {
           )}
         </div>
       </div>
+      <button 
+        className={`back-to-top-button ${showBackToTop ? 'visible' : ''}`}
+        onClick={scrollToTop}
+      >
+        <UpOutlined />
+      </button>
     </div>
   );
 };

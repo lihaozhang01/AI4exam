@@ -22,7 +22,7 @@ const MultipleChoiceQuestion = ({ question, index, gradingResult }) => {
     <Card title={`${index + 1}. 多选题`} style={{ marginBottom: '20px' }}>
       <MarkdownRenderer>{question.stem}</MarkdownRenderer>
 
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%', marginTop: '20px' }}>
         {question.options.map((option, i) => {
           const isSelected = (userAnswers[question.id] || []).includes(i);
           return (

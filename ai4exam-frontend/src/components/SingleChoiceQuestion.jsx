@@ -11,7 +11,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
     <Card title={`${index + 1}. 单选题`} style={{ marginBottom: '20px' }}>
       <MarkdownRenderer>{question.stem}</MarkdownRenderer>
 
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%', marginTop: '20px' }}>
         {question.options.map((option, i) => (
           <div
             key={i}
