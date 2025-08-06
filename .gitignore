@@ -6,7 +6,7 @@
 
 # Ignore environment variables
 .env
-
+.bat
 # Ignore logs
 logs
 *.log
