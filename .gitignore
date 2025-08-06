@@ -6,7 +6,7 @@
 
 # Ignore environment variables
 .env
-.bat
+*.bat
 # Ignore logs
 logs
 *.log
@@ -32,7 +32,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-
+.tests/
 # Python
 __pycache__/
 *.pyc

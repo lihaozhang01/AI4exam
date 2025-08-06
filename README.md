@@ -12,7 +12,7 @@
 
 -   已安装 Python 3.8+
 -   Node.js 和 npm (用于前端)
-
+## 初次使用
 ### 安装
 
 1.  **克隆仓库**
@@ -59,9 +59,45 @@
         ```sh
         npm install
         ```
+## 创建脚本
+- 为了方便使用，您可以创建一个脚本文件，用于启动后端和前端服务器。
+- 在项目根目录下创建一个名为 `run.sh` 的文件（或 `run.bat`，根据您的操作系统），并添加以下内容：
 
+  -   **对于 macOS/Linux (`run.sh`)**:
+      ```sh
+      #!/bin/bash
+
+      # 激活后端虚拟环境并启动服务器
+      echo "Starting backend server..."
+      cd backend
+      source venv/bin/activate
+      uvicorn main:app --reload &
+      cd ..
+
+      # 启动前端开发服务器
+      echo "Starting frontend development server..."
+      cd ai4exam-frontend
+      npm run dev
+      ```
+
+  -   **对于 Windows (`run.bat`)**:
+      ```bat
+      @echo off
+
+      ECHO "Starting backend server..."
+      start "Backend" cmd /k "cd backend && .\venv\Scripts\activate && uvicorn main:app --reload"
+
+      ECHO "Starting frontend development server..."
+      start "Frontend" cmd /k "cd ai4exam-frontend && npm run dev"
+      ```
 ## 使用
-
+创建脚本后，您可以直接运行脚本文件，而无需手动启动后端和前端服务器。
+- 对于 macOS/Linux，运行 `./run.sh`。
+- 对于 Windows，在项目文件夹中打开命令提示符或PowerShell中运行 `./run.bat`。
+- 脚本将自动启动后端服务器和前端开发服务器。
+- **在浏览器中打开 `http://localhost:5173` 即可开始使用应用程序。**
+或者
+- 您也可以手动启动后端和前端服务器。
 1.  **运行后端服务器**
 
     -   在 `backend` 目录下运行：
@@ -89,5 +125,5 @@
   - 练习完成后，您可以点击“提交”按钮提交您的答案，应用程序将根据您的答案给出反馈。
   - 您也可以点击单题反馈，或者点击全题反馈，查看练习题的详细反馈（**同样建议您使用自己的点评模板**）。
 
-![应用截图](docs/images/开始界面.svg)
-![应用截图](docs/images/设置界面.svg)
+![应用截图](docs/images/开始界面.png)
+![应用截图](docs/images/设置界面.png)
