@@ -18,7 +18,7 @@
 1.  **克隆仓库**
 
     ```sh
-    git clone https://github.com/your-username/ai4exam.git
+    git clone https://github.com/lihaozhang01/AI4exam.git
     cd ai4exam
     ```
 
