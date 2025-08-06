@@ -383,7 +383,7 @@ const TestPaperPage = () => {
           <p>{description}</p>
         </div>
         <div className="test-paper-header-nav-side">
-          <Link to="/" className="paper-to-generator">←返回新建试卷</Link>
+          <Link to="/" className="paper-to-generator">←返回出题表单</Link>
           <Link to="/history" className="paper-to-history">查看历史试卷→</Link>
         </div>
       </div>

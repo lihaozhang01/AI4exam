@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Input } from 'antd';
-import { CloudUploadOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Upload, Input, Button } from 'antd';
+import { CloudUploadOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import './Forms.css';
 
 const { Dragger } = Upload;
@@ -20,9 +20,16 @@ const KnowledgeSourceForm = ({ source, onSourceChange }) => {
     onSourceChange({ ...source, fileList: newFileList });
   };
 
+  const handleRemoveFile = (e) => {
+    e.stopPropagation(); // Stop propagation to prevent opening file dialog
+    onSourceChange({ ...source, fileList: [] });
+  };
+
   const draggerProps = {
     name: 'file',
+    name: 'file',
     multiple: false,
+    accept: '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain,.md,text/markdown',
     fileList,
     onChange: handleFileChange,
     beforeUpload: () => false, // Prevent auto-upload
@@ -53,14 +60,24 @@ const KnowledgeSourceForm = ({ source, onSourceChange }) => {
       >
         {fileList.length > 0 ? (
           <div className="file-info">
-            <FileTextOutlined style={{ marginRight: 8 }} />
-            <span>{fileList[0].name}</span>
+            <FileTextOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+            <span className="file-name">{fileList[0].name}</span>
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />} 
+              onClick={handleRemoveFile} 
+              className="remove-file-btn"
+            />
           </div>
         ) : (
           <>
             <p className="upload-icon"><CloudUploadOutlined /></p>
             <p className="upload-text">将文件拖拽至此，或点击选择</p>
-            <p className="upload-text-small">仅支持DOCX，TXT，Markdown等文本文件</p>
+            <p className="upload-text-small">
+              目前仅支持DOCX，TXT，Markdown等文本文件，
+              <br />
+              其他文本文件可修改后缀上传。
+            </p>
           </>
         )}
       </Dragger>

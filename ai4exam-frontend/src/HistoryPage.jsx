@@ -139,7 +139,7 @@ function HistoryPage() {
     <div className="history-container">
       <header className="history-header">
         <h1>学习历史</h1>
-        <p>在这里回顾您所有的提交记录和试卷模板。</p>
+        <p>温故而知新</p>
       </header>
 
       <div className="controls-container">
