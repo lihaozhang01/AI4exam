@@ -31,10 +31,12 @@
 .choice-option .ant-checkbox-wrapper span:last-child {
   padding-left: 12px;
 }
-
+.choice-option-text p {
+  display: inline;
+  margin: 0;
+}
 .choice-option-text {
   flex-grow: 1;
-  white-space: pre-wrap;
   line-height: 1.6;
   color: var(--primary-text);
 }

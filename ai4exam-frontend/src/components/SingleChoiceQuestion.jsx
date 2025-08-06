@@ -15,7 +15,7 @@ const SingleChoiceQuestion = ({ question, index, gradingResult }) => {
         {question.options.map((option, i) => (
           <div
             key={i}
-            className={`choice-option ${userAnswers[question.id] === i ? 'selected' : ''}`}
+             className={`choice-option ${userAnswers[question.id] === i ? 'selected' : ''}`} 
             onClick={() => {
               if (!gradingResult) {
                 updateUserAnswer(question.id, i);

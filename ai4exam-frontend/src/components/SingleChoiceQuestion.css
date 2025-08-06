@@ -34,7 +34,10 @@
 
 .choice-option-text {
   flex-grow: 1;
-  white-space: pre-wrap;
   line-height: 1.6;
   color: var(--primary-text);
+}
+.choice-option-text p {
+  display: inline;
+  margin: 0;
 }

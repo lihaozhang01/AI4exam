@@ -12,6 +12,8 @@ import MultipleChoiceQuestion from './components/MultipleChoiceQuestion';
 import FillInTheBlankQuestion from './components/FillInTheBlankQuestion';
 import EssayQuestion from './components/EssayQuestion';
 import MarkdownRenderer from './components/MarkdownRenderer';
+import OverallFeedback from './components/OverallFeedback';
+import SingleQuestionFeedback from './components/SingleQuestionFeedback';
 import './TestPaperPage.css';
 
 // Helper function to build the payload for API calls
@@ -326,9 +328,7 @@ const TestPaperPage = () => {
   const renderContent = () => (
     !testData || !testData.questions ? null :
       <>
-        {overallFeedback && (
-          <Alert message="AI 总结与点评" description={<MarkdownRenderer>{overallFeedback}</MarkdownRenderer>} type="info" showIcon style={{ marginBottom: '24px' }} closable onClose={() => setOverallFeedback(null)} />
-        )}
+        <OverallFeedback feedback={overallFeedback} onClose={() => setOverallFeedback(null)} />
         {testData.questions
           .filter(question => {
             if (!showOnlyIncorrect || submissionStatus !== 'submitted_and_showing_answers') {
@@ -338,27 +338,27 @@ const TestPaperPage = () => {
             return result && result.is_correct === false; // 只显示被标记为错误并且有批改结果的题目
           })
           .map((question, index) => (
-          <div key={question.id}>
-            {(() => {
-              const result = gradingResults?.find(r => r.question_id === question.id);
-              switch (question.type) {
-                case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
-                case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
-                case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
-                case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />;
-                default: return <p>未知题型</p>;
-              }
-            })()}
-            {submissionStatus === 'submitted_and_showing_answers' && (
-              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f9f9f9', borderTop: '1px solid #eee' }}>
-                <Button onClick={() => handleRequestSingleQuestionFeedback(question.id)}> 请求 AI 点评此题 </Button>
-                {singleQuestionFeedbacks[question.id] && (
-                  <Alert message="AI 点评" description={<MarkdownRenderer>{singleQuestionFeedbacks[question.id]}</MarkdownRenderer>} type="info" showIcon style={{ marginTop: '16px' }} closable onClose={() => setSingleQuestionFeedback(question.id, null)} />
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+            <div key={question.id}>
+              {(() => {
+                const result = gradingResults?.find(r => r.question_id === question.id);
+                switch (question.type) {
+                  case 'single_choice': return <SingleChoiceQuestion question={question} index={index} gradingResult={result} />;
+                  case 'multiple_choice': return <MultipleChoiceQuestion question={question} index={index} gradingResult={result} />;
+                  case 'fill_in_the_blank': return <FillInTheBlankQuestion question={question} index={index} gradingResult={result} />;
+                  case 'essay': return <EssayQuestion question={question} index={index} gradingResult={result} />;
+                  default: return <p>未知题型</p>;
+                }
+              })()}
+              {submissionStatus === 'submitted_and_showing_answers' && (
+                <SingleQuestionFeedback
+                  questionId={question.id}
+                  feedback={singleQuestionFeedbacks[question.id]}
+                  onRequestFeedback={handleRequestSingleQuestionFeedback}
+                  onClearFeedback={() => setSingleQuestionFeedback(question.id, null)}
+                />
+              )}
+            </div>
+          ))}
         <Divider />
       </>
   );
