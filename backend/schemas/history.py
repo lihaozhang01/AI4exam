@@ -28,7 +28,6 @@ class TestPaperResult(BaseModel):
     # 新增的统计字段
     correct_objective_questions: int = 0
     total_objective_questions: int = 0
-    total_essay_questions: int = 0
 
     class Config:
         from_attributes = True

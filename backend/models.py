@@ -24,7 +24,7 @@ class TestPaperResult(Base):
     test_paper_id = Column(Integer, ForeignKey('test_papers.id'))
     user_answers = Column(JSON) # Store user's answers
     grading_results = Column(JSON) # Store grading results
-    correct_objective_questions = Column(Integer)  # 客观题正确数
+    correct_objective_questions = Column(Integer, nullable=False, default=0)  # 客观题正确数
     overall_feedback = Column(Text, nullable=True) # Store overall AI feedback
     question_feedbacks = Column(JSON, nullable=True) # Store individual question AI feedbacks
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
