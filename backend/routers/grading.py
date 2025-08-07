@@ -19,18 +19,14 @@ async def grade_questions(
     request: schemas.GradeQuestionsRequest, 
     db: Session = Depends(get_db),
     provider: str = Header(..., alias="X-Provider"),
-    api_key: str = Header(..., alias="X-Api-Key"),
-    evaluation_model: Optional[str] = Header(None, alias="X-Evaluation-Model"),
-    evaluation_prompt: Optional[str] = Header(None, alias="X-Evaluation-Prompt")
+    api_key: str = Header(..., alias="X-Api-Key")
 ):
-    decoded_prompt = urllib.parse.unquote(evaluation_prompt) if evaluation_prompt else None
+    configure_genai(api_key=api_key, provider=provider)
     db_result, grading_results = await services.grade_and_save_test(
         db=db,
         request=request,
         provider=provider,
-        api_key=api_key,
-        evaluation_model=evaluation_model,
-        evaluation_prompt=decoded_prompt
+        api_key=api_key
     )
     return schemas.GradeQuestionsResponse(result_id=db_result.id, results=grading_results)
 

@@ -8,25 +8,20 @@ import schemas
 from . import database
 from . import grading
 from . import ai
-def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.UserAnswer]):
+async def grade_and_save_test(
+    db: Session,
+    request: schemas.GradeQuestionsRequest,
+    provider: str,
+    api_key: str
+):
     """Grades a test submission, calculates statistics, and saves everything."""
-    test_paper = get_test_paper_by_id(db, test_id)
+    test_paper = database.get_test_paper_by_id(db, int(request.test_id))
     questions_map = {str(q.id): q for q in test_paper.questions}
 
     grading_results = []
-    correct_objective_count = 0
-    total_objective_count = 0
-    total_essay_count = 0
-
-    # Classify all questions first
-    for question in test_paper.questions:
-        if question.question_type in GRADING_STRATEGIES:
-            total_objective_count += 1
-        elif question.question_type == 'essay':
-            total_essay_count += 1
 
     # Grade submitted answers
-    for user_answer in user_answers:
+    for user_answer in request.answers:
         question = questions_map.get(str(user_answer.question_id))
         if not question:
             continue
@@ -34,14 +29,12 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
         # 如果是论述题，直接提取参考答案，不进行评分
         if question.question_type == 'essay':
             explanation = ""
-            # 参考答案存储在 correct_answer['reference_explanation'] 中
+            # The reference answer is stored in correct_answer['reference_explanation']
             if isinstance(question.correct_answer, dict):
                 explanation = question.correct_answer.get('reference_explanation', '')
             elif isinstance(question.correct_answer, str):
-                # 兼容旧数据或意外的字符串格式
+                # Compatible with old data or unexpected string format
                 explanation = question.correct_answer
-            else:
-                explanation = ""
             
             grading_results.append(schemas.EssayGradeResult(
                 question_id=user_answer.question_id,
@@ -49,26 +42,20 @@ def grade_and_save_test(db: Session, test_id: int, user_answers: List[schemas.Us
             ))
             continue
 
-        # 处理客观题
-        if question.question_type not in GRADING_STRATEGIES:
-            continue
-
-        is_correct = grade_objective_question(question, user_answer)
-        if is_correct:
-            correct_objective_count += 1
-        
+        # process objective questions
+        is_correct = grading.grade_objective_question(question, user_answer)
         grading_results.append(schemas.ObjectiveGradeResult(
             question_id=user_answer.question_id, 
             is_correct=is_correct
         ))
 
     # Convert Pydantic models to dictionaries for JSON serialization
-    user_answers_dicts = [ans.model_dump() for ans in user_answers]
+    user_answers_dicts = [ans.model_dump() for ans in request.answers]
     grading_results_dicts = [res.model_dump() for res in grading_results]
 
     # Create and save the result
     db_result = models.TestPaperResult(
-        test_paper_id=test_id,
+        test_paper_id=request.test_id,
         user_answers=user_answers_dicts,
         grading_results=grading_results_dicts
     )
