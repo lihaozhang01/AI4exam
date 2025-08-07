@@ -27,7 +27,6 @@ const KnowledgeSourceForm = ({ source, onSourceChange }) => {
 
   const draggerProps = {
     name: 'file',
-    name: 'file',
     multiple: false,
     accept: '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain,.md,text/markdown',
     fileList,

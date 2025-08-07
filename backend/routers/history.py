@@ -74,21 +74,9 @@ def delete_history_result(result_id: int, delete_paper: bool = False, db: Sessio
 
     test_paper_id = result.test_paper_id
 
-    # 删除单个测试结果
-    success = services.delete_test_result(db, result_id)
+    # 删除测试结果，如果需要，此函数也会处理关联试卷的删除
+    success = services.delete_test_result(db, result_id, delete_paper)
     if not success:
-        # 理论上不会发生，因为前面已经检查过
         raise HTTPException(status_code=404, detail="Test result not found during deletion")
-
-    # 如果需要，删除关联的试卷
-    if delete_paper and test_paper_id:
-        # 检查是否还有其他结果与此试卷相关
-        remaining_results = db.query(schemas.history.TestPaperResult).filter(schemas.history.TestPaperResult.test_paper_id == test_paper_id).count()
-        if remaining_results == 0:
-            paper_success = services.delete_test_paper(db, test_paper_id)
-            if not paper_success:
-                # 即使试卷删除失败，提交记录也已删除，所以不应抛出404
-                # 但可以记录一个警告或错误
-                print(f"Warning: Test paper with id {test_paper_id} could not be deleted.")
 
     return

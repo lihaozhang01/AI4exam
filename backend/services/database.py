@@ -156,8 +156,8 @@ def get_test_result(db: Session, result_id: int) -> models.TestPaperResult:
         raise HTTPException(status_code=404, detail=f"Test result with ID {result_id} not found.")
     return result
 
-def delete_test_result(db: Session, result_id: int) -> bool:
-    """Deletes a test result, and the test paper if it's the last result."""
+def delete_test_result(db: Session, result_id: int, delete_paper: bool = False) -> bool:
+    """Deletes a test result, and optionally the test paper if it's the last result."""
     result = db.query(models.TestPaperResult).filter(models.TestPaperResult.id == result_id).first()
     if not result:
         return False
@@ -166,14 +166,15 @@ def delete_test_result(db: Session, result_id: int) -> bool:
     db.delete(result)
     db.commit()
 
-    # Check if there are any remaining results for this test paper
-    remaining_results_count = db.query(models.TestPaperResult).filter(models.TestPaperResult.test_paper_id == test_paper_id).count()
+    if delete_paper and test_paper_id:
+        # Check if there are any remaining results for this test paper
+        remaining_results_count = db.query(models.TestPaperResult).filter(models.TestPaperResult.test_paper_id == test_paper_id).count()
 
-    if remaining_results_count == 0:
-        # If no results are left, delete the test paper itself
-        test_paper = db.query(models.TestPaper).filter(models.TestPaper.id == test_paper_id).first()
-        if test_paper:
-            db.delete(test_paper)
-            db.commit()
-            
+        if remaining_results_count == 0:
+            # If no results are left, delete the test paper itself
+            test_paper = db.query(models.TestPaper).filter(models.TestPaper.id == test_paper_id).first()
+            if test_paper:
+                db.delete(test_paper)
+                db.commit()
+                
     return True
