@@ -44,9 +44,7 @@ def get_submission_history(
     # 这一步仍然需要在应用层处理，因为数据库中的NULL值需要转换
     for result in results:
         if result.test_paper:
-            if result.test_paper.total_objective_questions == 0:
-                result.correct_objective_questions = 0
-            elif result.correct_objective_questions is None:
+            if result.correct_objective_questions is None:
                 result.correct_objective_questions = 0
 
             if result.test_paper.total_objective_questions is None:

@@ -53,11 +53,18 @@ async def grade_and_save_test(
     user_answers_dicts = [ans.model_dump() for ans in request.answers]
     grading_results_dicts = [res.model_dump() for res in grading_results]
 
+    # Calculate correct objective question count
+    correct_objective_questions = sum(
+        1 for result in grading_results 
+        if isinstance(result, schemas.ObjectiveGradeResult) and result.is_correct
+    )
+
     # Create and save the result
     db_result = models.TestPaperResult(
         test_paper_id=request.test_id,
         user_answers=user_answers_dicts,
-        grading_results=grading_results_dicts
+        grading_results=grading_results_dicts,
+        correct_objective_questions=correct_objective_questions
     )
 
     db.add(db_result)
