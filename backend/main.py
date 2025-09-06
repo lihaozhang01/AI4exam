@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import Base
 from database import engine
 # 從 routers 導入所有路由器模組
-from routers import tests, grading, history, utils, history_test_papers
+from routers import tests, grading, history, utils, history_test_papers, export
 
 # --- App and Configuration Setup ---
 
@@ -42,6 +42,7 @@ app.include_router(grading.router)
 app.include_router(history.router, prefix="/history")
 app.include_router(history_test_papers.router, prefix="/history_test_papers")
 app.include_router(utils.router)
+app.include_router(export.router)
 
 @app.get("/", tags=["Root"])
 async def read_root():

@@ -1,9 +1,9 @@
 // src/TestPaperPage.jsx
 
 import React, { useEffect, useState, useRef } from 'react'; // 1. 引入 useRef
-import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link, useLocation } from 'react-router-dom';
 import { Empty, Button, Divider, message, Alert, Spin, Space, Switch } from 'antd';
-import { UpOutlined } from '@ant-design/icons';
+import { UpOutlined, ExportOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import useTestStore from './store/useTestStore';
 
@@ -50,6 +50,7 @@ const TestPaperPage = () => {
   const [messageApi, contextHolder] = message.useMessage(); // 1. 使用 antd 的 message hook
   const { testId, resultId } = useParams();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const {
     testData,
@@ -186,7 +187,7 @@ const TestPaperPage = () => {
     return () => {
       effectRan.current = true;
     }
-  }, [resultId, testId, navigate, searchParams, setTestData, setTestForHistory, setUserAnswers, setIsLoading, setGradingResults, setOverallFeedback, setSubmissionStatus, setSingleQuestionFeedback, reset]);
+  }, [resultId, testId, navigate, searchParams, setTestData, setTestForHistory, setUserAnswers, setIsLoading, setGradingResults, setOverallFeedback, setSubmissionStatus, setSingleQuestionFeedback, reset, location.key]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -249,6 +250,16 @@ const TestPaperPage = () => {
     if (originalTestId) {
       reset();
       navigate(`/testpaper/${originalTestId}`, { state: { key: Date.now() } });
+    }
+  };
+
+  const handleExportHtml = () => {
+    if (testData && testData.test_id) {
+      // 打开新窗口导出HTML
+      window.open(`http://127.0.0.1:8000/export/test-paper/${testData.test_id}/html`, '_blank');
+      messageApi.success('试卷已导出为HTML格式');
+    } else {
+      messageApi.error('试卷信息不完整，无法导出');
     }
   };
 
@@ -372,7 +383,6 @@ const TestPaperPage = () => {
   }
 
   const { name, description } = testData || {};
-  console.log('[DEBUG] TestPaperPage testData:', testData);
   return (
     <div className="test-paper-container">
       {contextHolder}
@@ -400,12 +410,32 @@ const TestPaperPage = () => {
         {renderContent()}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           {submissionStatus === 'in_progress' && (
-            <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading} className="submit-and-show-answers-btn"> 提交并查看答案 </Button>
+            <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
+              <Button type="primary" size="large" onClick={handleSubmitAndShowAnswers} loading={isLoading} className="submit-and-show-answers-btn"> 提交并查看答案 </Button>
+              <Button 
+                icon={<ExportOutlined />} 
+                size="large" 
+                onClick={handleExportHtml}
+                type="primary"
+                style={{ backgroundColor: '#C4E9E4', borderColor: '#C4E9E4' }}
+              >
+                导出HTML
+              </Button>
+            </Space>
           )}
           {submissionStatus === 'submitted_and_showing_answers' && (
             <Space direction="horizontal" style={{ justifyContent: 'center', width: '100%' }}>
               <Button type="primary" size="large" onClick={handleRequestAiFeedback} loading={isLoading}> {isLoading ? '正在请求AI分析...' : '请求AI进行分析'} </Button>
               <Button size="large" onClick={handleRetakeTest}> 重新作答 </Button>
+              <Button 
+                icon={<ExportOutlined />} 
+                size="large" 
+                onClick={handleExportHtml}
+                type="primary"
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                导出HTML
+              </Button>
             </Space>
           )}
           {submissionStatus === 'submitted_and_showing_answers' && gradingResults && (
